@@ -2,7 +2,7 @@
 
 This library provides a mobile web scanning experience for the BlinkReceipt API
 
-Library documentation is available at https://blinkreceipt.github.io/blinkreceipt-mobileweb
+Library documentation is available at https://blinkreceipt.github.io/blinkreceipt-js
 
 ## Integration Instructions
 
