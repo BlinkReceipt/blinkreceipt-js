@@ -55,17 +55,19 @@ BlinkReceipt.onCancelled = function() {
     $('#initialChoice').css('display', '');
 };
 
-BlinkReceipt.linuxArgs = {directpi: 1};
-
+//Only set these properties if you want to force the sandbox environment and/or a specific version of the API
 BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
-BlinkReceipt.apiVersion = 6;
-
-BlinkReceipt.validatePromotions = true;
+//BlinkReceipt.apiVersion = 9;
 
 var queryParams = new URLSearchParams(window.location.search);
 var slug = queryParams.get('slug');
 if (slug && slug.length > 0) {
+    BlinkReceipt.validatePromotions = true;
     BlinkReceipt.promotionIds = [slug];
+}
+var apiKey = queryParams.get('api_key');
+if (apiKey && apiKey.length > 0) {
+    BlinkReceipt.apiKey = apiKey;
 }
 
 $('#btnMobileScan').click(function() {
@@ -106,10 +108,40 @@ $('#lnkGoBack').click(function(event) {
 function showProdTable(parseResults) {
     $('#loading').css('display','none');
 
-    if (parseResults.qualifiedPromoId) {
-        $('#spanPromo').html('Qualified: ' + parseResults.qualifiedPromoId + '<br>').css('display','');
-    } else if (parseResults.promoQualificationError) {
-        $('#spanPromo').html('Not qualified: ' + parseResults.promoQualificationError + '<br>').css('display','');
+    var qualifiedProdIndexes = [];
+
+    var promoText = '';
+
+    if (parseResults.qualifiedPromos) {
+
+        var qualifiedSlugs = [];
+
+        parseResults.qualifiedPromos.forEach(function(promo) {
+            qualifiedSlugs.push(promo.slug);
+
+            if (promo.relatedProductIndexes) {
+                promo.relatedProductIndexes.forEach(function(prodIdx) {
+                    qualifiedProdIndexes.push(prodIdx);
+                });
+            }
+        });
+
+        promoText += 'Qualified: ' + qualifiedSlugs.join(', ') + '<br>';
+    }
+
+    if (parseResults.unqualifiedPromos) {
+        var unqualifiedSlugs = [];
+
+        parseResults.unqualifiedPromos.forEach(function(promo) {
+            unqualifiedSlugs.push(promo.slug + ': ' + promo.errorMessage + '<br>');
+
+        });
+
+        promoText += 'Not qualified: <br>' + unqualifiedSlugs.join(', ') + '<br>';
+    }
+
+    if (promoText.length > 0) {
+        $('#spanPromo').html(promoText + '<br>').css('display', '');
     }
 
     if (parseResults.merchant_name) {
@@ -171,6 +203,10 @@ function showProdTable(parseResults) {
             newRowTop.css('display','');
             newRowTop.find('.prodName').text(nameToShow);
 
+            if (qualifiedProdIndexes.indexOf(parseInt(i)) != -1) {
+                newRowTop.css('background-color', 'yellow');
+            }
+
             if (curProd.price && curProd.price.value > 0) {
                 newRowTop.find('.price').text('$' + curProd.price.value.toFixed(2));
             }
@@ -207,7 +243,7 @@ function showProdTable(parseResults) {
             if (curProd.upc && curProd.upc.length > 0) {
                 extraInfo.push('UPC: ' + curProd.upc);
             }
-            if (curProd.product_name && curProd.product_name.length > 0) {
+            if (curProd.rsd && curProd.rsd.length > 0) {
                 extraInfo.push('Receipt Text: ' + curProd.rsd.value);
             }
             if (extraInfo.length > 0) {
@@ -240,10 +276,11 @@ function checkForBrandProducts() {
 }
 
 function showProd(matchProd) {
+    $('#imgThumb').css({width: '100%'});
     $('#imgThumb').attr('src', matchProd.image_url);
     $('#spanProd').html(firstName + ', thanks for purchasing <b>' + matchProd.product_name + '</b>!<br><br>You\'ve earned 10 loyalty points!');
 
-    $('#prodInfo').css('display', '');
+    $('#prodInfo').css({display: ''});
 
     addPointsToBalance();
 }
@@ -252,7 +289,7 @@ function addPointsToBalance() {
     var data = {pass_serial: passSerial};
 
     $.get({
-        url: "https://arch.windfall.mobi/passupdate/addbalance.php",
+        url: "https://sandbox.blinkreceipt.com/mobilewallet/passupdate/addbalance.php",
         data: data,
         success: function(resp){
             console.log(resp);
