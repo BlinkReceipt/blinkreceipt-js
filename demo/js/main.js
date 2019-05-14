@@ -26,6 +26,10 @@ function isMobileBrowser() {
 //BlinkReceipt.apiKey = '42aa8cae13104d95b5a7972b11c7b6c6';
 BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
 
+BlinkReceipt.onPreliminaryResults = function(parseResults) {
+    console.log("Got frame results");
+}
+
 BlinkReceipt.onFinished = function(parseResults) {
     var matchProd = null;
     if (typeof brand !== 'undefined') {
