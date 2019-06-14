@@ -30,7 +30,9 @@ BlinkReceipt.onPreliminaryResults = function(parseResults) {
     console.log("Got frame results");
 }
 
-BlinkReceipt.onFinished = function(parseResults) {
+BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
+    console.log("Got raw text with len " + rawText.length + " and hash " + hash);
+    
     var matchProd = null;
     if (typeof brand !== 'undefined') {
         hardcodedProds.forEach(function(curProd) {
