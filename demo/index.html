@@ -29,9 +29,8 @@
     span.innerText = "OpenCV Ready";
   }
   </script>
-  <!--
-  <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
-  -->
+  <!-- NOTE : JQuery does not need to be added to use blinkreceipt.js; it is already bundled in the minified version in /dist and won't interfere with any other version(s) on your page.
+              However for this demo, it is needed by the other .js files. Your implementation may not need JQuery added like this below.  -->
   <script
   src="https://code.jquery.com/jquery-3.1.1.min.js"
   integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
@@ -99,7 +98,7 @@
          <td style="padding-left: 15px; padding-right: 15px;"><span class="prodName" style="font-weight: semibold"></span></td>
          <td style="width: 15%"><span class="price" style="font-weight: semibold;"></span>
           <br>
-          <span class="size" style="font-weight: semibold; font-size: 10pt"></span> 
+          <span class="size" style="font-weight: semibold; font-size: 10pt"></span>
           </td>
         </tr>
         <tr id="protoRowBottom" class="protoRow" style="display: none; border-bottom: 1px solid gray;">
@@ -108,7 +107,7 @@
         </tbody>
       </table>
     </div>
-    
+
   </div>
 
   <!-- include adapter for srcObject shim -->
