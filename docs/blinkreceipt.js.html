@@ -26,8 +26,31 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/** @namespace */
-var BlinkReceiptError = {
+            <pre class="prettyprint source linenums"><code>/**
+ * @file See {@link BlinkReceipt} for library properties and methods
+ * @author BlinkReceipt LLC
+ */
+
+const thisScriptFileName = 'blinkreceipt.js';
+
+import $ from 'jquery';
+
+
+let path = null;
+if (document.currentScript) {
+    path = document.currentScript.src;
+} else {
+    let scripts = document.getElementsByTagName('script');
+    path = scripts[scripts.length-1].src;
+}
+if (!path) {
+    path = $('script[src*='+$.escapeSelector(thisScriptFileName)+']').attr('src');
+}
+const baseURL = path.split('/').slice(0, -1).join('/')+'/';
+
+
+/** @namespace */
+const BlinkReceiptError = {
     /**
      * Live scanning in the mobile browser is only supported on HTTPS web applications
      */
@@ -50,7 +73,7 @@ var BlinkReceiptError = {
 };
 
 /** @namespace **/
-var BlinkReceipt = {
+window.BlinkReceipt = {
     /**
      * You must provide a valid BlinkReceipt API key to use this library. You can obtain a trial license at {@link https://microblink.com/signup} 
      *
@@ -79,10 +102,18 @@ var BlinkReceipt = {
      * If `validatePromotions` is enabled, you can pass one or more promotion IDs to restrict validation to those campaigns
      *
      * _Optional_
-     * @type {array}
+     * @type {Array.&lt;string>}
      * @example ['campaign1','campaign2']
      */
     promotionIds: null,
+
+    /**
+     * Set to `true` to turn on duplicate detection. After scanning, in `parseResults` you will find two properties: `isDuplicate` (boolean) and `duplicateBlinkReceiptId` (string)
+     *
+     * _Optional_
+     * @type {boolean}
+     */
+    detectDuplicates: false,
 
     /**
      * The country code of the receipts being scanned
@@ -95,9 +126,19 @@ var BlinkReceipt = {
 
     /**
      * This callback is invoked once the user has indicated the scanning session is complete
-     * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan/0.1}
+     * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan}
+     * @param jsonString {string} This is the raw JSON string on which the hash was computed
+     * @param hash {string} This is the SHA-256 HMAC hash computed on the `jsonString` using your client secret as the key
      */
-    onFinished: function(parseResults) {
+    onFinished: function(parseResults, jsonString, hash) {
+
+    },
+
+    /**
+     * This callback is invoked once per scanned frame, as soon as results are ready. The results will be aggregated for all frames scanned up to this point.
+     * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan}
+     */
+    onPreliminaryResults: function(parseResults) {
 
     },
 
@@ -168,7 +209,7 @@ var BlinkReceipt = {
         };
         navigator.mediaDevices.getUserMedia(constraints).then(this.handleSuccess.bind(this)).catch(this.handleError.bind(this));
 
-        this.blinkReceiptId = this.uuidv4();
+        //this.blinkReceiptId = this.uuidv4();
 
         var currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
@@ -180,13 +221,13 @@ var BlinkReceipt = {
     startStaticScan: function() {
         this.inSelectMode = true;
         $('#inputImage').click();
-        $('#snap').css('backgroundImage', 'url(blinkreceipt/plus.png)');
+        $('#snap').removeClass('cameraButton').addClass('plusButton');
 
         if ($(window).width() > 500) {
             $('#tblButtons').css('position', 'relative');
         }
 
-        this.blinkReceiptId = this.uuidv4();
+        //this.blinkReceiptId = this.uuidv4();
 
         var currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
@@ -206,7 +247,7 @@ var BlinkReceipt = {
 
         $('#br-container').css('display', '');
         $('#gum').css('display', '');
-        $('#snap').css('backgroundImage', 'url(blinkreceipt/camera-big.png)');
+        $('#snap').removeClass('plusButton').addClass('cameraButton');
         $('#imgStatic').css('display', 'none');
         $('#finish').css('visibility', 'hidden');
         $('#btnLeftAction').css('visibility', 'hidden');
@@ -233,14 +274,14 @@ var BlinkReceipt = {
         var elemVideo = $('&lt;video id="gum" autoplay muted playsinline style="display: none">&lt;/video>');
         $('#br-container').append(elemVideo);
 
-        var elemEdge1 = $('&lt;span style="color: white; position: absolute; display: none; font-family: Arial" id="lblEdge1">Receipt Edge&lt;/span>')
+        var elemEdge1 = $('&lt;span class="edgeLabel">Receipt Edge&lt;/span>')
                         .css({top: $(window).height() / 2 + 'px',
                             left: '0px',
                             display: ''})
                         .css('-webkit-transform', 'translate(-35%, 0) rotate(-90deg)');
         $('#br-container').append(elemEdge1);
 
-        var elemEdge2 = $('&lt;span style="color: white; position: absolute; display: none; font-family: Arial" id="lblEdge2">Receipt Edge&lt;/span>')
+        var elemEdge2 = $('&lt;span class="edgeLabel">Receipt Edge&lt;/span>')
                         .css({top: $(window).height() / 2 + 'px',
                             right: '0px',
                             display: ''})
@@ -248,13 +289,13 @@ var BlinkReceipt = {
         $('#br-container').append(elemEdge2);
 
         var elemCenter = $('&lt;center>');
-        var elemImgStatic = $('&lt;img id="imgStatic" style="display: none">');
+        var elemImgStatic = $('&lt;img id="imgStatic">');
         elemCenter.append(elemImgStatic);
 
         var elemDivButtonBar = $('&lt;div id="divButtonBar">');
-        var elemTableButtons = $('&lt;table border=0 width=100% id="tblButtons" style="position: absolute; left: 0px;">');
+        var elemTableButtons = $('&lt;table border=0 width=100% id="tblButtons">');
           
-        var elemRowButtons = $('&lt;tbody>&lt;tr>&lt;td style="width: 33%" align="center">&lt;button id="btnLeftAction" style="width: 100px; height: 60px; border: none; background-color: black; color: white; font-family: Arial; font-size: 16pt; visibility: hidden">Cancel&lt;/button>&lt;/td>&lt;td style="width: 33%" align="center">&lt;button id="snap" style="background-image: url(\'blinkreceipt/camera-big.png\'); background-size: 60px 60px; width: 60px; height: 60px; border: none; visibility: hidden">&lt;/button>&lt;/td>&lt;td style="width: 33%" align="center">&lt;button id="finish" style="width: 100px; height: 60px; border: none; background-color: black; color: white; font-family: Arial; font-size: 16pt; visibility: hidden; ">Finish&lt;/button>&lt;/td>&lt;/tr>&lt;/tbody>');
+        var elemRowButtons = $('&lt;tbody>&lt;tr>&lt;td align="center">&lt;button id="btnLeftAction" class="actionButton">Cancel&lt;/button>&lt;/td>&lt;td align="center">&lt;button id="snap" class="cameraButton">&lt;/button>&lt;/td>&lt;td align="center">&lt;button id="finish" class="actionButton">Finish&lt;/button>&lt;/td>&lt;/tr>&lt;/tbody>');
 
 
         elemTableButtons.append(elemRowButtons);
@@ -263,10 +304,10 @@ var BlinkReceipt = {
 
         $('#br-container').append(elemCenter);
 
-        var elemInputImg = $('&lt;input type="file" accept="image/*;capture=camera" id="inputImage" style="visibility: hidden">');
+        var elemInputImg = $('&lt;input type="file" accept="image/*;capture=camera" id="inputImage">');
         $('#br-container').append(elemInputImg);     
 
-        var elemSpinner = $('&lt;img id="imgSpinner" src="blinkreceipt/Spinner-1s-200px.gif" style="position: absolute; width: 100px; height: 100px; display: none">');
+        var elemSpinner = $('&lt;div id="imgSpinner" src="" style="position: absolute; width: 100px; height: 100px; display: none;">');
         elemSpinner.css({left: (($(window).width() - elemSpinner.width()) / 2) + 'px',
                          top:  (($(window).height() - elemSpinner.height()) / 2) + 'px'});
 
@@ -281,7 +322,7 @@ var BlinkReceipt = {
         $('#gum').on('loadedmetadata', this.loadedMetadata.bind(this));
         $('#inputImage').on("change", this.staticImgChange.bind(this));
 
-        this.audio = new Audio('blinkreceipt/camera.wav');
+        this.audio = new Audio(baseURL + 'media/camera.wav');
     },
 
     loadedMetadata: function() {
@@ -302,7 +343,7 @@ var BlinkReceipt = {
         image.style.height = ($(window).height() - 5) + 'px';
 
         image.onload = function() {
-            $('#imgStatic').css('display', '');
+            $('#imgStatic').css('display', 'initial');
             $('#gum').css('display', 'none');
             $('#finish').css('visibility', 'visible');
             
@@ -352,16 +393,22 @@ var BlinkReceipt = {
         if (this.showAddButton) {
             this.showAddButton = false;
 
+            //if we have a previous static image, detach and re-insert it below current image so that current image will appear on top
+            if (this.staticImages.length > 1) {
+                var prevImg = this.staticImages[this.staticImages.length-2];
+                prevImg.detach().prependTo($('#br-container'));
+            }
+
             if (this.staticImages.length > 0) {
-                var lastImg = this.staticImages[this.staticImages.length-1];
-                lastImg.animate({
-                    top: "-=" + lastImg.height() * 0.9
+                var curImg = this.staticImages[this.staticImages.length-1];
+                curImg.animate({
+                    top: "-=" + curImg.height() * 0.9
                 });
             }
 
             $('#gum').css('display', '');
             $('#finish').css('visibility', 'hidden');
-            $('#snap').css('backgroundImage', 'url(blinkreceipt/camera-big.png)');
+            $('#snap').removeClass('plusButton').addClass('cameraButton');
             $('#btnLeftAction').text('Cancel');
 
         } else {
@@ -422,7 +469,7 @@ var BlinkReceipt = {
                         $('#finish').css('visibility', 'visible');
                         $('#btnLeftAction').css('visibility', 'visible');
                         $('#btnLeftAction').text('Retake');
-                        $('#snap').css('backgroundImage', 'url(blinkreceipt/plus.png)');
+                        $('#snap').removeClass('cameraButton').addClass('plusButton');
                     });
                     
                     imgStatic.get(0).setAttribute('src', winningDataUrl);
@@ -460,11 +507,13 @@ var BlinkReceipt = {
                 lastImg.remove();
             }
 
+            this.showAddButton = false;
+
             $('#imgStatic').css('display', 'none');
             $('#gum').css('display', '');
             $('#finish').css('visibility', 'hidden');
             $('#btnLeftAction').text('Cancel');
-            $('#snap').css('backgroundImage', 'url(blinkreceipt/camera-big.png)');
+            $('#snap').removeClass('plusButton').addClass('cameraButton');
             
             this.curFrameIdx--;
         
@@ -473,18 +522,18 @@ var BlinkReceipt = {
                 window.stream.getTracks().forEach(function(curTrack) {
                     curTrack.stop();
                 });
-
-                this.staticImages.forEach(function(curStaticImg) {
-                    curStaticImg.remove();
-                });
-
-                this.staticImages = [];
-
-                $('body').css('backgroundColor', this.oldBgColor);
-                $('#br-container').css('display', 'none');
-
-                this.onCancelled();
             }
+
+            this.staticImages.forEach(function(curStaticImg) {
+                curStaticImg.remove();
+            });
+
+            this.staticImages = [];
+
+            $('body').css('backgroundColor', this.oldBgColor);
+            $('#br-container').css('display', 'none');
+
+            this.onCancelled();
         }
 
     },
@@ -588,11 +637,15 @@ var BlinkReceipt = {
     sendImageToLinux: function(dataUrl) {
         var data = new FormData();
 
-        data.append('blink_receipt_id', this.blinkReceiptId);
+        if (this.blinkReceiptId !== null) {
+            data.append('blink_receipt_id', this.blinkReceiptId);
+        }
+
         data.append('frame_idx', this.curFrameIdx++);
         data.append('license_key', this.apiKey);
         data.append('country', this.countryCode);
         data.append('mobile_web', true);
+        data.append('detect_duplicates', this.detectDuplicates);
 
         if (this.validatePromotions) {
             data.append('validate_promotions', 1);
@@ -623,7 +676,14 @@ var BlinkReceipt = {
             cache: false,
             contentType: false,
             processData: false,
-            success: function(resp){
+            dataType: "text",
+            success: function(respText, textStatus, request) {
+
+                this.hash = request.getResponseHeader("X-BlinkReceipt-Hash");
+                this.rawResponse = respText;
+
+                var resp = JSON.parse(respText);
+
                 if (resp.error) {
                     this.onError(BlinkReceiptError.SCANFAIL, resp.error);
 
@@ -633,6 +693,12 @@ var BlinkReceipt = {
                 
                 } else {
                     this.parseResults = resp;
+
+                    this.onPreliminaryResults(this.parseResults);
+
+                    if (this.blinkReceiptId === null) {
+                        this.blinkReceiptId = this.parseResults.blink_receipt_id;
+                    }
                 }
 
                 this.piLookupInProgress = false;
@@ -652,7 +718,7 @@ var BlinkReceipt = {
     },
 
     returnResults: function() {
-        this.onFinished(this.parseResults);
+        this.onFinished(this.parseResults, this.rawResponse, this.hash);
         this.postDataToServer();
     },
 
@@ -682,7 +748,7 @@ var BlinkReceipt = {
         var sessionEndTime = currentDate.getTime() / 1000;
         var sessionLength = sessionEndTime - this.sessionStartTime;
 
-        data = {
+        let data = {
             receipt: {
                 banner_id: this.parseResults.banner_id,
                 purchased_date: dateStr,
@@ -768,7 +834,7 @@ var BlinkReceipt = {
             data.append('receipt_images[blink_receipt_id]', this.blinkReceiptId);
             data.append('receipt_images[index]', idx+1);
 
-            data.append('receipt_images[image]', curFrame);
+            data.append('receipt_images[image]', curFrame, 'test.png');
 
             $.post({
                 url: "https://licensing.blinkreceipt.com/api/receipt_images",
@@ -814,13 +880,13 @@ $(document).ready(function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="BlinkReceipt.html">BlinkReceipt</a></li><li><a href="BlinkReceiptError.html">BlinkReceiptError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="BlinkReceiptError.html">BlinkReceiptError</a></li><li><a href="window.BlinkReceipt.html">BlinkReceipt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 15:19:36 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Oct 08 2019 17:43:27 GMT+0700 (Indochina Time)
 </footer>
 
 <script> prettyPrint(); </script>

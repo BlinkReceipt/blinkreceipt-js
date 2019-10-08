@@ -176,7 +176,8 @@ function showProdTable(parseResults) {
     }
 
     if (parseResults.date) {
-        var purchaseDate = moment(parseResults.date.value);
+        let dateObj = new Date(parseResults.date.value);
+        let purchaseDate = moment(dateObj.toISOString());
         $('#cellDate').text('Date: ' + purchaseDate.format('MMM D, YYYY'));
     }
     if (parseResults.time) {

@@ -1,0 +1,16 @@
+{
+  "name": "blinkreceipt-js",
+  "scripts": {
+    "build": "webpack",
+    "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "copy-webpack-plugin": "^5.0.4",
+    "jquery": "^3.4.1",
+    "jsdoc": "^3.6.3",
+    "path": "^0.12.7",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  }
+}

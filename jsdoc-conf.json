@@ -2,7 +2,7 @@
     "plugins": ["plugins/markdown"],
     "templates": {
         "default": {
-            "outputSourceFiles": false
+            "outputSourceFiles": true
         }
     }
 }

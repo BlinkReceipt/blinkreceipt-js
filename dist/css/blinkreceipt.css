@@ -1,3 +1,7 @@
+#btnSelectImage {
+	cursor: pointer;
+}
+
 button#snap {
 	background-size: 60px 60px;
 	width: 60px;
@@ -12,6 +16,7 @@ button#snap {
 
 .plusButton {
 	background-image: url('../media/plus.png');
+	cursor: pointer;
 }
 
 .edgeLabel {
@@ -39,10 +44,11 @@ table#tblButtons tr {
 	font-family: Arial; 
 	font-size: 16pt; 
 	visibility: hidden;
+	cursor: pointer;
 }
 
 div#imgSpinner {
-	background-image: url('../media/Spinner-1s-200px.gif'); 
+	background-image: url('../media/Spinner-1s-200px.gif');
 	background-size: contain;
 }
 

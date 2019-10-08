@@ -1,0 +1,57 @@
+#btnSelectImage {
+	cursor: pointer;
+}
+
+button#snap {
+	background-size: 60px 60px;
+	width: 60px;
+	height: 60px;
+	border: none;
+	visibility: hidden;
+}
+
+.cameraButton {
+	background-image: url('../media/camera-big.png');
+}
+
+.plusButton {
+	background-image: url('../media/plus.png');
+	cursor: pointer;
+}
+
+.edgeLabel {
+	color: white; position: absolute; font-family: Arial;
+}
+
+img#imgStatic {
+	display: none;
+}
+
+table#tblButtons {
+	position: absolute; left: 0px;
+}
+
+table#tblButtons tr {
+	width: 33%;
+}
+
+.actionButton {
+	width: 100px; 
+	height: 60px; 
+	border: none; 
+	background-color: black; 
+	color: white; 
+	font-family: Arial; 
+	font-size: 16pt; 
+	visibility: hidden;
+	cursor: pointer;
+}
+
+div#imgSpinner {
+	background-image: url('../media/Spinner-1s-200px.gif');
+	background-size: contain;
+}
+
+input#inputImage {
+	visibility: hidden;
+}
