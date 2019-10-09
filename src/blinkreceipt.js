@@ -356,7 +356,6 @@ window.BlinkReceipt = {
     },
 
     snapClick: function() {
-
         if (this.inSelectMode) {
             $('#inputImage').click();
             return;
@@ -455,6 +454,7 @@ window.BlinkReceipt = {
     },
 
     finishClick: function() {
+        $('#inputImage').val('');
 
         if (!this.inSelectMode) {
             window.stream.getTracks().forEach(function(curTrack) {
