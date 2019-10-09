@@ -1,11 +1,20 @@
 {
   "name": "blinkreceipt-js",
+  "description": "BlinkReceipt Mobile Web SDK",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BlinkReceipt/blinkreceipt-js"
+  },
+  "license": "",
   "scripts": {
     "build": "webpack",
     "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs"
   },
   "dependencies": {},
   "devDependencies": {
+    "@babel/core": "^7.6.3",
+    "@babel/preset-env": "^7.6.3",
+    "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^5.0.4",
     "jquery": "^3.4.1",
     "jsdoc": "^3.6.3",
