@@ -97,6 +97,14 @@ window.BlinkReceipt = {
     countryCode: 'US',
 
     /**
+     * An identifier for the current user to be used for purchase validation in API v11 and up
+     *
+     * _Optional_
+     * @type {string}
+     */
+    clientUserId: null,
+
+    /**
      * This callback is invoked once the user has indicated the scanning session is complete
      * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan}
      * @param jsonString {string} This is the raw JSON string on which the hash was computed
@@ -626,6 +634,10 @@ window.BlinkReceipt = {
                 data.append('promo_slug', this.promotionIds[0]);
                 data.append('promo_slugs', this.promotionIds.join(','));
             }
+        }
+
+        if (this.clientUserId) {
+            data.append('client_user_id', this.clientUserId);
         }
 
         let blob = this.dataURLtoBlob(dataUrl);
