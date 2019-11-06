@@ -187,7 +187,7 @@ window.BlinkReceipt = {
                 }
             }
         };
-        navigator.mediaDevices.getUserMedia(constraints).then(this.handleSuccess.bind(this)).catch(this.handleError.bind(this));
+        navigator.mediaDevices.getUserMedia(constraints).then(this.handleStreamCaptureSuccess.bind(this)).catch(this.handleStreamCaptureError.bind(this));
 
         //this.blinkReceiptId = this.uuidv4();
 
@@ -234,7 +234,7 @@ window.BlinkReceipt = {
         $('#snap').css('visibility', 'hidden');
     },
 
-    handleSuccess: function(stream) {
+    handleStreamCaptureSuccess: function(stream) {
             //console.log('getUserMedia() got stream: ', stream);
             window.stream = stream;
             this.gumVideo.style.display = '';
@@ -245,7 +245,7 @@ window.BlinkReceipt = {
             $('#stop').prop('disabled', false);
     },
 
-    handleError: function(error) {
+    handleStreamCaptureError: function(error) {
         //console.log('navigator.getUserMedia error: ', error);
         this.onError(BlinkReceiptError.STREAMFAIL, 'Failure to get stream: ' + error);
     },
@@ -357,7 +357,7 @@ window.BlinkReceipt = {
         let reader = new FileReader();
         reader.onload = function (e) {
           $('#imgStatic').attr('src', e.target.result);
-          this.sendImageToLinux(e.target.result);
+          this.sendImageToScanner(e.target.result);
         }.bind(this);
 
         reader.readAsDataURL($('#inputImage')[0].files[0]);
@@ -455,7 +455,7 @@ window.BlinkReceipt = {
 
                     this.staticImages.push(imgStatic);
                     
-                    this.sendImageToLinux(winningDataUrl);
+                    this.sendImageToScanner(winningDataUrl);
                 }
             }.bind(this), 200);
         }
@@ -515,7 +515,6 @@ window.BlinkReceipt = {
 
             this.onCancelled();
         }
-
     },
 
     endScan: function() {
@@ -614,7 +613,7 @@ window.BlinkReceipt = {
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     },
 
-    sendImageToLinux: function(dataUrl) {
+    sendImageToScanner: function(dataUrl) {
         let data = new FormData();
 
         if (this.blinkReceiptId !== null) {
