@@ -4,8 +4,9 @@ const CopyPlugin = require('copy-webpack-plugin');
 module.exports = {
     entry: './src/blinkreceipt.js',
     output: {
-        filename: 'blinkreceipt.js',
         path: path.resolve(__dirname, 'dist'),
+        filename: 'blinkreceipt.js',
+        sourceMapFilename: "blinkreceipt.js.map"
     },
     devtool: 'source-map',
     module: {

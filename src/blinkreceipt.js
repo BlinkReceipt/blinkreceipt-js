@@ -498,23 +498,27 @@ window.BlinkReceipt = {
             this.curFrameIdx--;
         
         } else {
-            if (!this.inSelectMode) {
-                window.stream.getTracks().forEach(function(curTrack) {
-                    curTrack.stop();
-                });
-            }
-
-            this.staticImages.forEach(function(curStaticImg) {
-                curStaticImg.remove();
-            });
-
-            this.staticImages = [];
+            this.cancelScan();
 
             $('body').css('backgroundColor', this.oldBgColor);
             $('#br-container').css('display', 'none');
-
-            this.onCancelled();
         }
+    },
+
+    cancelScan: function() {
+        if (!this.inSelectMode) {
+            window.stream.getTracks().forEach(function(curTrack) {
+                curTrack.stop();
+            });
+        }
+
+        this.staticImages.forEach(function(curStaticImg) {
+            curStaticImg.remove();
+        });
+
+        this.staticImages = [];
+
+        this.onCancelled();
     },
 
     endScan: function() {
