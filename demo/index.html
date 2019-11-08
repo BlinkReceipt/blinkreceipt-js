@@ -21,7 +21,7 @@
 
   <title>BlinkReceipt Mobile Web Demo</title>
 
-  <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
 
   <script>
   function onOpenCvReady() {
@@ -118,6 +118,33 @@
   <script src="../dist/blinkreceipt.js"></script>
 
   <script src="js/main.js"></script>
+
+  <script>
+    // cache-buster, appends new time each reload; OK to do this since it's a single-page app that doesn't really reload
+    (function() {
+      var h, a, f;
+
+      a = document.getElementsByTagName('script');
+      for (h = 0; h < a.length; h++) {
+        f = a[h];
+        if (f.src && !f.src.startsWith('https://', 0)) {
+          var g = f.src.replace(/(&|\?)v=\d+/, '');
+          f.src = g + (g.match(/\?/) ? '&' : '?');
+          f.src += 'v=' + (new Date().valueOf());
+        }
+      }
+
+      a = document.getElementsByTagName('link');
+      for (h = 0; h < a.length; h++) {
+        f = a[h];
+        if (f.href && !f.href.startsWith('https://', 0)) {
+          var g = f.href.replace(/(&|\?)v=\d+/, '');
+          f.href = g + (g.match(/\?/) ? '&' : '?');
+          f.href += 'v=' + (new Date().valueOf());
+        }
+      }
+    })()
+  </script>
 
 </body>
 </html>
