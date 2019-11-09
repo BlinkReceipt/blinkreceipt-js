@@ -5,8 +5,8 @@ $(document).ready(function() {
         $('#resultsContainer').css('width', '100%');
     }
 
-    if (window.location.protocol != 'https:') {
-        alert('Warning! Please serve this page via secure origin or things will break! As per Chrome 47, getUserMedia() is no longer supported in Chrome browser over http:// (unsecure origin). It will work on https:// (secure origin).');
+    if (!BlinkReceipt.isSecureOrigin()) {
+        alert('getUserMedia() must be run from a secure origin: HTTPS or localhost.');
     }
     if (navigator.mediaDevices && isMobileBrowser()) {
         $('#btnMobileScan').css('display','');

@@ -163,12 +163,15 @@ window.BlinkReceipt = {
     qualifiedPromoDbId: null,
     staticImages: [],
 
+    isSecureOrigin: function() {
+        return (location.protocol === 'https:' || location.hostname === 'localhost');
+    },
+
     /**
      * Initiate a live scanning session
      */
     startMobileScan: function() {
-        let isSecureOrigin = location.protocol === 'https:' || location.hostname === 'localhost';
-        if (!isSecureOrigin) {
+        if (!this.isSecureOrigin()) {
             this.onError(BlinkReceiptError.INSECURE, 'getUserMedia() must be run from a secure origin: HTTPS or localhost.');
             return;
         }
