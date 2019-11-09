@@ -4,7 +4,10 @@ $(document).ready(function() {
     } else {
         $('#resultsContainer').css('width', '100%');
     }
-    
+
+    if (window.location.protocol != 'https:') {
+        console.log('Warning! Please serve this page via secure origin or things will break! As per Chrome 47, getUserMedia() is no longer supported in Chrome browser over http:// (unsecure origin). It will work on https:// (secure origin).');
+    }
     if (navigator.mediaDevices && isMobileBrowser()) {
         $('#btnMobileScan').css('display','');
     }
