@@ -7,3 +7,4 @@ wallet_demo.php
 /node_modules
 .gcloudignore
 app.yaml
+ngrok.exe

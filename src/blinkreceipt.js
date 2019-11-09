@@ -226,7 +226,7 @@ window.BlinkReceipt = {
         this.staticImages = [];
 
         $('#br-container').css('display', '');
-        $('#gum').css('display', '');
+        $('#gum').css('display', 'none');
         $('#snap').removeClass('plusButton').addClass('cameraButton');
         $('#imgStatic').css('display', 'none');
         $('#finish').css('visibility', 'hidden');
