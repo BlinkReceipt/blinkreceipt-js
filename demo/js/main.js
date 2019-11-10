@@ -117,6 +117,8 @@ $('#lnkGoBack').click(function(event) {
 function showProdTable(parseResults) {
     $('#loading').css('display','none');
 
+    if (!parseResults) return;
+
     var qualifiedProdIndexes = [];
 
     var promoText = '';

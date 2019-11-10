@@ -295,7 +295,7 @@ window.BlinkReceipt = {
         let elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="inputImage">');
         $('#br-container').append(elemInputImg);
 
-        let elemSpinner = $('<div id="imgSpinner" src="" style="position: absolute; width: 100px; height: 100px; display: none;">');
+        let elemSpinner = $('<div id="imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
         elemSpinner.css({left: (($(window).width() - elemSpinner.width()) / 2) + 'px',
                          top:  (($(window).height() - elemSpinner.height()) / 2) + 'px'});
 
@@ -672,7 +672,6 @@ window.BlinkReceipt = {
             processData: false,
             dataType: "text",
             success: function(respText, textStatus, request) {
-
                 this.hash = request.getResponseHeader("X-BlinkReceipt-Hash");
                 this.rawResponse = respText;
 
@@ -713,7 +712,7 @@ window.BlinkReceipt = {
 
     returnResults: function() {
         this.onFinished(this.parseResults, this.rawResponse, this.hash);
-        this.postDataToServer();
+        if (this.parseResults) this.postDataToServer();
     },
 
     postDataToServer: function() {
