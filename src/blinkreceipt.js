@@ -136,6 +136,10 @@ window.BlinkReceipt = {
 
     },
 
+    onStartMobileScanSuccess: function() {
+
+    },
+
     /**
      * This callback is invoked if an error occurs during the scanning session
      * @param errorCode {BlinkReceiptError} The code indicating what type of error occurred
@@ -192,10 +196,10 @@ window.BlinkReceipt = {
         };
         navigator.mediaDevices.getUserMedia(constraints).then(this.handleStreamCaptureSuccess.bind(this)).catch(this.handleStreamCaptureError.bind(this));
 
-        //this.blinkReceiptId = this.uuidv4();
-
         let currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
+
+        this.onStartMobileScanSuccess();
     },
 
     /**
@@ -226,6 +230,7 @@ window.BlinkReceipt = {
         this.piLookupInProgress = false;
         this.showAddButton = false;
         this.inSelectMode = false;
+        this.finishPending = false;
         this.staticImages = [];
 
         $('#br-container').css('display', '');
