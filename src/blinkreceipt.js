@@ -509,7 +509,6 @@ window.BlinkReceipt = {
             this.cancelScan();
 
             $('body').css('backgroundColor', this.oldBgColor);
-            $('#br-container').css('display', 'none');
         }
     },
 
