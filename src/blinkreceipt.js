@@ -110,7 +110,25 @@ window.BlinkReceipt = {
      * _Optional_
      * @type {string}
      */
-    clientUserId: null,
+    clientUserId: '',
+
+    oldBgColor: null,
+    gumVideo: null,
+    audio: null,
+    showAddButton: false,
+    inSelectMode: false,
+    piLookupInProgress: false,
+    finishPending: false,
+    parseResults: null,
+    curFrameIdx: 1,
+    blinkReceiptId: null,
+    linuxArgs: null,
+    apiDomain: "scan.blinkreceipt.com",
+    frames: [],
+    framesTimedOut: 0,
+    sdkVersion: 'mobileweb-1.1',
+    qualifiedPromoDbId: null,
+    staticImages: [],
 
     /**
      * This callback is invoked at the end of startStaticScan(). You may override its behavior in your instance if you are creating your own custom user interface.
@@ -122,6 +140,16 @@ window.BlinkReceipt = {
         if ($(window).width() > 500) {
             $('#tblButtons').css('position', 'relative');
         }
+    },
+
+    /**
+     * This callback is invoked after a scan and after we’ve considered a number of frames from the camera and chosen the best one. You may use it to display the captured frame as a preview.
+     *  It can be assigned to the "src" attribute of an <img> tag.
+     *
+     * @param frameDataUrlDomString {string} output of the HTMLCanvasElement.toDataURL() method, of type 'image/jpeg'; a UTF-16 string
+     */
+    onScanFrameAcquired: function(frameDataUrlDomString) {
+
     },
 
     /**
@@ -178,6 +206,16 @@ window.BlinkReceipt = {
     },
 
     /**
+     *
+     */
+    onStreamCaptureSuccess: function() {
+        this.gumVideo.style.display = '';
+        $('#start').prop('disabled',true);
+        $('#snap').prop('disabled', false);
+        $('#stop').prop('disabled', false);
+    },
+
+    /**
      * This callback is invoked if an error occurs during the scanning session
      * @param errorCode {BlinkReceiptError} The code indicating what type of error occurred
      * @param msg {string} Additional information about the error
@@ -192,24 +230,6 @@ window.BlinkReceipt = {
     onError: function(errorCode, msg) {
         this.onStreamCaptureError(errorCode, msg);
     },
-
-    oldBgColor: null,
-    gumVideo: null,
-    audio: null,
-    showAddButton: false,
-    inSelectMode: false,
-    piLookupInProgress: false,
-    finishPending: false,
-    parseResults: null,
-    curFrameIdx: 1,
-    blinkReceiptId: null,
-    linuxArgs: null,
-    apiDomain: "scan.blinkreceipt.com",
-    frames: [],
-    framesTimedOut: 0,
-    sdkVersion: 'mobileweb-1.1',
-    qualifiedPromoDbId: null,
-    staticImages: [],
 
     isSecureOrigin: function() {
         return (location.protocol === 'https:' || location.hostname === 'localhost');
@@ -245,12 +265,9 @@ window.BlinkReceipt = {
 
     handleStreamCaptureSuccess: function(stream) {
         window.stream = stream;
-        this.gumVideo.style.display = '';
         this.gumVideo.srcObject = stream;
 
-        $('#start').prop('disabled',true);
-        $('#snap').prop('disabled', false);
-        $('#stop').prop('disabled', false);
+        this.onStreamCaptureSuccess();
     },
 
     handleStreamCaptureError: function(error) {
@@ -460,8 +477,6 @@ window.BlinkReceipt = {
 
                 let frameQuality = this.getFrameQuality(imData, canvas.width, canvas.height);
 
-                //console.log("Finished frame " + counter + " with quality " + frameQuality + " and time is " + Date.now());
-
                 if (frameQuality > winningQuality) {
                     winningQuality = frameQuality;
                     winningDataUrl = canvas.toDataURL('image/jpeg');
@@ -469,6 +484,8 @@ window.BlinkReceipt = {
 
                 if (counter == 5) {
                     clearInterval(timer);
+
+                    this.onScanFrameAcquired(winningDataUrl);
             
                     $('#imgSpinner').css('display', 'none');
 
@@ -673,7 +690,7 @@ window.BlinkReceipt = {
             }
         }
 
-        if (this.clientUserId) {
+        if (this.clientUserId.length > 0) {
             data.append('client_user_id', this.clientUserId);
         }
 
