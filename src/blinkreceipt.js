@@ -61,6 +61,14 @@ window.BlinkReceipt = {
      * @type {integer}
      */
     apiVersion: null,
+
+    /**
+     * If set to true, then you are responsible for creating your own HTML UI elements, consistent with ours and using identical "id"-attribute values. See our theming guide at {TBD}.
+     *
+     * _Optional_
+     * @type {boolean}
+     */
+    dontUseStockUI: false,
     
     /**
      * Set to `true` to turn on promotion validation (requires appropriate permission on your API key)
@@ -105,13 +113,26 @@ window.BlinkReceipt = {
     clientUserId: null,
 
     /**
-     * This callback is invoked once the user has indicated the scanning session is complete
+     * This callback is invoked at the end of startStaticScan(). You may override its behavior in your instance if you are creating your own custom user interface.
+     */
+    onStartStaticScan: function() {
+        $('#inputImage').click();
+        $('#snap').removeClass('cameraButton').addClass('plusButton');
+
+        if ($(window).width() > 500) {
+            $('#tblButtons').css('position', 'relative');
+        }
+    },
+
+    /**
+     * This callback is invoked once the user has indicated the scanning session is complete. You may override its behavior in your instance if you are creating your own custom user interface.
      * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan}
      * @param jsonString {string} This is the raw JSON string on which the hash was computed
      * @param hash {string} This is the SHA-256 HMAC hash computed on the `jsonString` using your client secret as the key
      */
     onFinished: function(parseResults, jsonString, hash) {
-
+        $('body').css('backgroundColor', this.oldBgColor);
+        $('#br-container').css('display', 'none');
     },
 
     /**
@@ -123,10 +144,11 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked if the user cancels out of the scanning session
+     * This callback is invoked if the user cancels out of the scanning session. You may override its behavior in your instance if you are creating your own custom user interface.
      */
     onCancelled: function() {
-
+        this.clearScan();
+        $('body').css('backgroundColor', this.oldBgColor);
     },
 
     /**
@@ -136,8 +158,23 @@ window.BlinkReceipt = {
 
     },
 
-    onStartMobileScanSuccess: function() {
+    /**
+     * This callback is invoked at the end of startMobileScan(). You may override its behavior in your instance if you are creating your own custom user interface.
+     */
+    onStartMobileScan: function() {
+        this.oldBgColor = $('body').css('backgroundColor');
+        $('body').css('backgroundColor', 'black');
+    },
 
+    /**
+     * This callback is invoked at the end of retakeScan(). You may override its behavior in your instance if you are creating your own custom user interface.
+     */
+    onRetakeScan: function() {
+        $('#imgStatic').css('display', 'none');
+        $('#gum').css('display', '');
+        $('#finish').css('visibility', 'hidden');
+        $('#btnLeftAction').text('Cancel');
+        $('#snap').removeClass('plusButton').addClass('cameraButton');
     },
 
     /**
@@ -145,8 +182,15 @@ window.BlinkReceipt = {
      * @param errorCode {BlinkReceiptError} The code indicating what type of error occurred
      * @param msg {string} Additional information about the error
      */
-    onError: function(errorCode, msg) {
+    onStreamCaptureError: function(errorCode, msg) {
 
+    },
+
+    /**
+     * Obsolesced, now wrapper for onStreamCaptureError().
+     */
+    onError: function(errorCode, msg) {
+        this.onStreamCaptureError(errorCode, msg);
     },
 
     oldBgColor: null,
@@ -176,12 +220,9 @@ window.BlinkReceipt = {
      */
     startMobileScan: function() {
         if (!this.isSecureOrigin()) {
-            this.onError(BlinkReceiptError.INSECURE, 'getUserMedia() must be run from a secure origin: HTTPS or localhost.');
+            this.onStreamCaptureError(BlinkReceiptError.INSECURE, 'getUserMedia() must be run from a secure origin: HTTPS or localhost.');
             return;
         }
-
-        this.oldBgColor = $('body').css('backgroundColor');
-        $('body').css('backgroundColor', 'black');
 
         const constraints = {
             audio: false,
@@ -199,7 +240,21 @@ window.BlinkReceipt = {
         let currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
 
-        this.onStartMobileScanSuccess();
+        this.onStartMobileScan();
+    },
+
+    handleStreamCaptureSuccess: function(stream) {
+        window.stream = stream;
+        this.gumVideo.style.display = '';
+        this.gumVideo.srcObject = stream;
+
+        $('#start').prop('disabled',true);
+        $('#snap').prop('disabled', false);
+        $('#stop').prop('disabled', false);
+    },
+
+    handleStreamCaptureError: function(error) {
+        this.onStreamCaptureError(BlinkReceiptError.STREAMFAIL, 'Failure to get stream: ' + error);
     },
 
     /**
@@ -207,17 +262,13 @@ window.BlinkReceipt = {
      */
     startStaticScan: function() {
         this.inSelectMode = true;
-        $('#inputImage').click();
-        $('#snap').removeClass('cameraButton').addClass('plusButton');
-
-        if ($(window).width() > 500) {
-            $('#tblButtons').css('position', 'relative');
-        }
 
         //this.blinkReceiptId = this.uuidv4();
 
         let currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
+
+        this.onStartStaticScan();
     },
 
     /**
@@ -242,75 +293,59 @@ window.BlinkReceipt = {
         $('#snap').css('visibility', 'hidden');
     },
 
-    handleStreamCaptureSuccess: function(stream) {
-            //console.log('getUserMedia() got stream: ', stream);
-            window.stream = stream;
-            this.gumVideo.style.display = '';
-            this.gumVideo.srcObject = stream;
-
-            $('#start').prop('disabled',true);
-            $('#snap').prop('disabled', false);
-            $('#stop').prop('disabled', false);
-    },
-
-    handleStreamCaptureError: function(error) {
-        //console.log('navigator.getUserMedia error: ', error);
-        this.onError(BlinkReceiptError.STREAMFAIL, 'Failure to get stream: ' + error);
-    },
-
     createUI: function() {
-        let elemVideo = $('<video id="gum" autoplay muted playsinline style="display: none"></video>');
-        $('#br-container').append(elemVideo);
+        // Generate the UI elements (default) unless client wants to build their own
+        if (!this.dontUseStockUI) {
+            let elemVideo = $('<video id="gum" autoplay muted playsinline style="display: none"></video>');
+            $('#br-container').append(elemVideo);
 
-        let elemEdge1 = $('<span class="edgeLabel">Receipt Edge</span>')
-                        .css({top: $(window).height() / 2 + 'px',
-                            left: '0px',
-                            display: ''})
-                        .css('-webkit-transform', 'translate(-35%, 0) rotate(-90deg)');
-        $('#br-container').append(elemEdge1);
+            let elemEdge1 = $('<span class="edgeLabel">Receipt Edge</span>')
+                .css({top: $(window).height() / 2 + 'px',
+                    left: '0px',
+                    display: ''})
+                .css('-webkit-transform', 'translate(-35%, 0) rotate(-90deg)');
+            $('#br-container').append(elemEdge1);
 
-        let elemEdge2 = $('<span class="edgeLabel">Receipt Edge</span>')
-                        .css({top: $(window).height() / 2 + 'px',
-                            right: '0px',
-                            display: ''})
-                        .css('-webkit-transform', 'translate(35%, 0) rotate(90deg)');
-        $('#br-container').append(elemEdge2);
+            let elemEdge2 = $('<span class="edgeLabel">Receipt Edge</span>')
+                .css({top: $(window).height() / 2 + 'px',
+                    right: '0px',
+                    display: ''})
+                .css('-webkit-transform', 'translate(35%, 0) rotate(90deg)');
+            $('#br-container').append(elemEdge2);
 
-        let elemCenter = $('<center>');
-        let elemImgStatic = $('<img id="imgStatic">');
-        elemCenter.append(elemImgStatic);
+            let elemCenter = $('<center>');
+            let elemImgStatic = $('<img id="imgStatic">');
+            elemCenter.append(elemImgStatic);
 
-        let elemDivButtonBar = $('<div id="divButtonBar">');
-        let elemTableButtons = $('<table border=0 width=100% id="tblButtons">');
+            let elemDivButtonBar = $('<div id="divButtonBar">');
+            let elemTableButtons = $('<table border=0 width=100% id="tblButtons">');
+            let elemRowButtons = $('<tbody><tr><td align="center"><button id="btnLeftAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
+            elemTableButtons.append(elemRowButtons);
+            elemDivButtonBar.append(elemTableButtons);
+            elemCenter.append(elemDivButtonBar);
 
-        let elemRowButtons = $('<tbody><tr><td align="center"><button id="btnLeftAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
+            $('#br-container').append(elemCenter);
 
+            let elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="inputImage">');
+            $('#br-container').append(elemInputImg);
 
-        elemTableButtons.append(elemRowButtons);
-        elemDivButtonBar.append(elemTableButtons);
-        elemCenter.append(elemDivButtonBar);
+            let elemSpinner = $('<div id="imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
+            elemSpinner.css({left: (($(window).width() - elemSpinner.width()) / 2) + 'px',
+                top:  (($(window).height() - elemSpinner.height()) / 2) + 'px'});
 
-        $('#br-container').append(elemCenter);
+            $('#br-container').append(elemSpinner);
+        }
 
-        let elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="inputImage">');
-        $('#br-container').append(elemInputImg);
-
-        let elemSpinner = $('<div id="imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
-        elemSpinner.css({left: (($(window).width() - elemSpinner.width()) / 2) + 'px',
-                         top:  (($(window).height() - elemSpinner.height()) / 2) + 'px'});
-
-        $('#br-container').append(elemSpinner);
+        // Applying internal pointers and bindings; even if client sets `this.dontUseStockUI=true`, they still need to conform to these element ID values.
 
         this.gumVideo = document.querySelector('video#gum');
+        this.audio = new Audio(baseURL + 'media/camera.wav');
 
         $('#snap').click(this.snapClick.bind(this));
         $('#finish').click(this.finishClick.bind(this));
         $('#btnLeftAction').click(this.btnLeftClick.bind(this));
-
         $('#gum').on('loadedmetadata', this.loadedMetadata.bind(this));
         $('#inputImage').on("change", this.staticImgChange.bind(this));
-
-        this.audio = new Audio(baseURL + 'media/camera.wav');
     },
 
     loadedMetadata: function() {
@@ -489,27 +524,22 @@ window.BlinkReceipt = {
 
     btnLeftClick: function() {
         if ($('#btnLeftAction').text() == 'Retake') {
-
-            if (this.staticImages.length > 0) {
-                let lastImg = this.staticImages.pop();
-                lastImg.remove();
-            }
-
-            this.showAddButton = false;
-
-            $('#imgStatic').css('display', 'none');
-            $('#gum').css('display', '');
-            $('#finish').css('visibility', 'hidden');
-            $('#btnLeftAction').text('Cancel');
-            $('#snap').removeClass('plusButton').addClass('cameraButton');
-            
-            this.curFrameIdx--;
-        
+            this.retakeScan();
         } else {
             this.cancelScan();
-
-            $('body').css('backgroundColor', this.oldBgColor);
         }
+    },
+
+    retakeScan: function() {
+        if (this.staticImages.length > 0) {
+            let lastImg = this.staticImages.pop();
+            lastImg.remove();
+        }
+
+        this.showAddButton = false;
+        this.curFrameIdx--;
+
+        this.onRetakeScan();
     },
 
     cancelScan: function() {
@@ -535,9 +565,6 @@ window.BlinkReceipt = {
 
         this.staticImages = [];
                 
-        $('body').css('backgroundColor', this.oldBgColor);
-        $('#br-container').css('display', 'none');
-
         this.returnResults();
     },
 
@@ -678,11 +705,11 @@ window.BlinkReceipt = {
                 let resp = JSON.parse(respText);
 
                 if (resp.error) {
-                    this.onError(BlinkReceiptError.SCANFAIL, resp.error);
+                    this.onStreamCaptureError(BlinkReceiptError.SCANFAIL, resp.error);
 
                 } else if (resp.blur_score) {
                     this.curFrameIdx--;
-                    this.onError(BlinkReceiptError.BLURRYFRAME, "Frame too blurry");
+                    this.onStreamCaptureError(BlinkReceiptError.BLURRYFRAME, "Frame too blurry");
                 
                 } else {
                     this.parseResults = resp;
@@ -702,7 +729,7 @@ window.BlinkReceipt = {
                 }
             }.bind(this),
             error: function(xhr, status, error) {
-                this.onError(BlinkReceiptError.SCANFAIL, 'Failed to scan image: ' + error);
+                this.onStreamCaptureError(BlinkReceiptError.SCANFAIL, 'Failed to scan image: ' + error);
                 if (status === 'timeout') {
                     this.framesTimedOut++;
                 }

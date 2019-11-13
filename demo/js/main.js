@@ -35,6 +35,9 @@ BlinkReceipt.onPreliminaryResults = function(parseResults) {
 
 BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     console.log("Got raw text with len " + rawText.length + " and hash " + hash);
+
+    $('body').css('backgroundColor', this.oldBgColor);
+    $('#br-container').css('display', 'none');
     
     var matchProd = null;
     if (typeof brand !== 'undefined') {
@@ -54,18 +57,19 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     }
 };
 
-BlinkReceipt.onError = function(errorCode, msg) {
+BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
     alert("BlinkReceipt error: " + msg);
 };
 
 BlinkReceipt.onCancelled = function() {
     BlinkReceipt.clearScan();
-    
+    $('body').css('backgroundColor', this.oldBgColor);
     $('#initialChoice').css('display', '');
 };
 
 //Only set these properties if you want to force the sandbox environment and/or a specific version of the API
 BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
+// BlinkReceipt.apiDomain = 'scan-ph.blinkreceipt.com';
 //BlinkReceipt.apiVersion = 9;
 
 var queryParams = new URLSearchParams(window.location.search);
@@ -90,8 +94,6 @@ $('#btnSelectImage').click(function() {
     };
     BlinkReceipt.startStaticScan();
 });
-
-
 
 $('#lnkGoBack').click(function(event) {
     event.preventDefault();
