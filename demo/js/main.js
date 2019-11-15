@@ -61,8 +61,12 @@ BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
     alert("BlinkReceipt error: " + msg);
 };
 
-BlinkReceipt.onCancelled = function() {
-    BlinkReceipt.clearScan();
+BlinkReceipt.onCancelScan = function() {
+    this.staticImages.forEach(function(curStaticImg) {
+        curStaticImg.remove();
+    });
+    this.staticImages = [];
+
     $('body').css('backgroundColor', this.oldBgColor);
     $('#initialChoice').css('display', '');
 };

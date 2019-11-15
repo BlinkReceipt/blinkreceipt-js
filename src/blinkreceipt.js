@@ -63,14 +63,6 @@ window.BlinkReceipt = {
     apiVersion: null,
 
     /**
-     * If set to true, then you are responsible for creating your own HTML UI elements, consistent with ours and using identical "id"-attribute values. See our theming guide at {TBD}.
-     *
-     * _Optional_
-     * @type {boolean}
-     */
-    dontUseStockUI: false,
-    
-    /**
      * Set to `true` to turn on promotion validation (requires appropriate permission on your API key)
      *
      * _Optional_
@@ -114,7 +106,7 @@ window.BlinkReceipt = {
 
     oldBgColor: null,
     gumVideo: null,
-    audio: null,
+    cameraClickSound: null,
     showAddButton: false,
     inSelectMode: false,
     piLookupInProgress: false,
@@ -131,10 +123,49 @@ window.BlinkReceipt = {
     staticImages: [],
 
     /**
-     * This callback is invoked at the end of startStaticScan(). You may override its behavior in your instance if you are creating your own custom user interface.
+     * This callback is invoked during creation of UI elements. You may override this in your instance to customize these specific elements, provided you preserve the `id`-attribute values, because they will be bound to events/callbacks.
+     *
+     * @param $parentContainer {object} the JQuery element that is the parent container for all other BlinkReceipt-JS elements.
+     * @param $elemCenter {object} a JQuery mid-level element that is horizontally centered and will contain the captured image, as well as the action buttons.
+     */
+    onCreateUI: function($parentContainer, $elemCenter) {
+        let $elemEdge1 = $('<span class="edgeLabel">Receipt Edge</span>')
+            .css({
+                top: $(window).height() / 2 + 'px',
+                left: '0px',
+                display: ''
+            })
+            .css('-webkit-transform', 'translate(-35%, 0) rotate(-90deg)');
+        $parentContainer.append($elemEdge1);
+
+        let $elemEdge2 = $('<span class="edgeLabel">Receipt Edge</span>')
+            .css({
+                top: $(window).height() / 2 + 'px',
+                right: '0px',
+                display: ''
+            })
+            .css('-webkit-transform', 'translate(35%, 0) rotate(90deg)');
+        $parentContainer.append($elemEdge2);
+
+        let $elemDivButtonBar = $('<div id="divButtonBar">');
+        let $elemTableButtons = $('<table border=0 width=100% id="tblButtons">');
+        let $elemRowButtons = $('<tbody><tr><td align="center"><button id="btnLeftAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
+        $elemTableButtons.append($elemRowButtons);
+        $elemDivButtonBar.append($elemTableButtons);
+        $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
+
+        let $elemSpinner = $('<div id="imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
+        $elemSpinner.css({
+            left: (($(window).width() - $elemSpinner.width()) / 2) + 'px',
+            top:  (($(window).height() - $elemSpinner.height()) / 2) + 'px'
+        });
+        $parentContainer.append($elemSpinner);
+    },
+
+    /**
+     * This callback is invoked after a static scan is performed (select image).
      */
     onStartStaticScan: function() {
-        $('#inputImage').click();
         $('#snap').removeClass('cameraButton').addClass('plusButton');
 
         if ($(window).width() > 500) {
@@ -143,17 +174,81 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked after a scan and after we’ve considered a number of frames from the camera and chosen the best one. You may use it to display the captured frame as a preview.
-     *  It can be assigned to the "src" attribute of an <img> tag.
-     *
-     * @param frameDataUrlDomString {string} output of the HTMLCanvasElement.toDataURL() method, of type 'image/jpeg'; a UTF-16 string
+     * This callback is invoked after the mobile scan is performed.
      */
-    onScanFrameAcquired: function(frameDataUrlDomString) {
-
+    onStartMobileScan: function() {
+        this.oldBgColor = $('body').css('backgroundColor');
+        $('body').css('backgroundColor', 'black');
     },
 
     /**
-     * This callback is invoked once the user has indicated the scanning session is complete. You may override its behavior in your instance if you are creating your own custom user interface.
+     * This callback is invoked when the plus-sign button is clicked on, to sideline the previously-captured frame and prepare the interface to receive another "click".
+     *  You may override this in your instance to customize the display of the captured frame(s) and related user interface.
+     */
+    onFrameAddButtonClicked: function() {
+        //if we have a previous static image, detach and re-insert it below current image so that current image will appear on top
+        if (this.staticImages.length > 1) {
+            let prevImg = this.staticImages[this.staticImages.length-2];
+            prevImg.detach().prependTo($('#br-container'));
+        }
+
+        if (this.staticImages.length > 0) {
+            let curImg = this.staticImages[this.staticImages.length-1];
+            curImg.animate({
+                top: "-=" + curImg.height() * 0.9
+            });
+        }
+
+        $('#finish').css('visibility', 'hidden');
+        $('#snap').removeClass('plusButton').addClass('cameraButton');
+        $('#btnLeftAction').text('Cancel');
+    },
+
+    /**
+     * This callback is invoked at the point that the camera "snap" button is clicked on but before the "winning" frame has been acquired..
+     */
+    onScanFrameInitiated: function() {
+        this.cameraClickSound.play();
+        $('#imgSpinner').css('display', '');
+    },
+
+    /**
+     * This callback is invoked after a scan and after we’ve considered a number of frames from the camera and chosen the best (winning) one.
+     *  You may override this in your instance to customize the display of the captured frame and related user interface.
+     *
+     * @param winningDataUrl {string} output of the HTMLCanvasElement.toDataURL() method, of type 'image/jpeg'; a UTF-16 string (https://developer.mozilla.org/en-US/docs/Web/API/DOMString). It can be assigned to the "src" attribute of an <img> tag.
+     */
+    onScanFrameAcquired: function(winningDataUrl) {
+        $('#imgSpinner').css('display', 'none');
+
+        let scaleW = $('#gum').width() / this.gumVideo.videoWidth;
+        let scaleH = $('#gum').height() / this.gumVideo.videoHeight;
+        let scaleFactor = Math.min(scaleW, scaleH);
+
+        let imgStatic = $('<img style="position: absolute; display: none">');
+        imgStatic.css('width', scaleFactor * this.gumVideo.videoWidth + 'px');
+        imgStatic.css('height', scaleFactor * this.gumVideo.videoHeight + 'px');
+        imgStatic.css('left', (screen.width - scaleFactor * this.gumVideo.videoWidth) / 2 + "px");
+        imgStatic.css('top', '0px');
+
+        $('#br-container').prepend(imgStatic);
+
+        imgStatic.on('load', function() {
+            imgStatic.css('display', '');
+            $('#gum').css('display', 'none');
+            $('#finish').css('visibility', 'visible');
+            $('#btnLeftAction').css('visibility', 'visible');
+            $('#btnLeftAction').text('Retake');
+            $('#snap').removeClass('cameraButton').addClass('plusButton');
+        });
+
+        imgStatic.get(0).setAttribute('src', winningDataUrl);
+
+        this.staticImages.push(imgStatic);
+    },
+
+    /**
+     * This callback is invoked once the user has indicated the scanning session is complete.
      * @param parseResults {object} For the structure of the results object consult the response schema in the API docs at {@link https://app.swaggerhub.com/apis-docs/blinkreceipt/apiscan}
      * @param jsonString {string} This is the raw JSON string on which the hash was computed
      * @param hash {string} This is the SHA-256 HMAC hash computed on the `jsonString` using your client secret as the key
@@ -172,11 +267,32 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked if the user cancels out of the scanning session. You may override its behavior in your instance if you are creating your own custom user interface.
+     * This callback is invoked if the user cancels out of the scanning session.
+     */
+    onCancelScan: function() {
+        this.staticImages.forEach(function(curStaticImg) {
+            curStaticImg.remove();
+        });
+        this.staticImages = [];
+
+        $('body').css('backgroundColor', this.oldBgColor);
+    },
+
+    /**
+     * Obsolesced, now wrapper for onCancelScan().
      */
     onCancelled: function() {
-        this.clearScan();
-        $('body').css('backgroundColor', this.oldBgColor);
+        this.onCancelScan();
+    },
+
+    /**
+     *
+     */
+    onEndScan: function() {
+        this.staticImages.forEach(function(curStaticImg) {
+            curStaticImg.remove();
+        });
+        this.staticImages = [];
     },
 
     /**
@@ -187,16 +303,8 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked at the end of startMobileScan(). You may override its behavior in your instance if you are creating your own custom user interface.
-     */
-    onStartMobileScan: function() {
-        this.oldBgColor = $('body').css('backgroundColor');
-        $('body').css('backgroundColor', 'black');
-    },
-
-    /**
-     * This callback is invoked at the end of retakeScan(). You may override its behavior in your instance if you are creating your own custom user interface.
-     */
+     * This callback is invoked after the retaking of a scan ("retake" button).
+        */
     onRetakeScan: function() {
         $('#imgStatic').css('display', 'none');
         $('#gum').css('display', '');
@@ -206,13 +314,20 @@ window.BlinkReceipt = {
     },
 
     /**
-     *
+     * This callback is invoked after a scan is finished or cancelled, to reset variables and UI elements.
+     */
+    onClearScan: function() {
+        $('#snap').removeClass('plusButton').addClass('cameraButton');
+        $('#snap').css('visibility', 'hidden');
+        $('#finish').css('visibility', 'hidden');
+        $('#btnLeftAction').css('visibility', 'hidden');
+    },
+
+    /**
+     * This callback is invoked when a mobile-scan session has begun and the capture stream has successfully started (the camera is active and waiting for the "snap click").
      */
     onStreamCaptureSuccess: function() {
-        this.gumVideo.style.display = '';
-        $('#start').prop('disabled',true);
         $('#snap').prop('disabled', false);
-        $('#stop').prop('disabled', false);
     },
 
     /**
@@ -230,6 +345,7 @@ window.BlinkReceipt = {
     onError: function(errorCode, msg) {
         this.onStreamCaptureError(errorCode, msg);
     },
+
 
     isSecureOrigin: function() {
         return (location.protocol === 'https:' || location.hostname === 'localhost');
@@ -266,6 +382,7 @@ window.BlinkReceipt = {
     handleStreamCaptureSuccess: function(stream) {
         window.stream = stream;
         this.gumVideo.srcObject = stream;
+        this.gumVideo.style.display = '';
 
         this.onStreamCaptureSuccess();
     },
@@ -285,6 +402,8 @@ window.BlinkReceipt = {
         let currentDate = new Date();
         this.sessionStartTime = currentDate.getTime() / 1000;
 
+        $('#inputImage').click();
+
         this.onStartStaticScan();
     },
 
@@ -303,60 +422,29 @@ window.BlinkReceipt = {
 
         $('#br-container').css('display', '');
         $('#gum').css('display', 'none');
-        $('#snap').removeClass('plusButton').addClass('cameraButton');
         $('#imgStatic').css('display', 'none');
-        $('#finish').css('visibility', 'hidden');
-        $('#btnLeftAction').css('visibility', 'hidden');
-        $('#snap').css('visibility', 'hidden');
+
+        this.onClearScan();
     },
 
     createUI: function() {
-        // Generate the UI elements (default) unless client wants to build their own
-        if (!this.dontUseStockUI) {
-            let elemVideo = $('<video id="gum" autoplay muted playsinline style="display: none"></video>');
-            $('#br-container').append(elemVideo);
+        let $parentContainer = $('#br-container');
 
-            let elemEdge1 = $('<span class="edgeLabel">Receipt Edge</span>')
-                .css({top: $(window).height() / 2 + 'px',
-                    left: '0px',
-                    display: ''})
-                .css('-webkit-transform', 'translate(-35%, 0) rotate(-90deg)');
-            $('#br-container').append(elemEdge1);
+        let $elemVideo = $('<video id="gum" autoplay muted playsinline style="display: none"></video>');
+        $parentContainer.append($elemVideo);
 
-            let elemEdge2 = $('<span class="edgeLabel">Receipt Edge</span>')
-                .css({top: $(window).height() / 2 + 'px',
-                    right: '0px',
-                    display: ''})
-                .css('-webkit-transform', 'translate(35%, 0) rotate(90deg)');
-            $('#br-container').append(elemEdge2);
+        let $elemCenter = $('<center>');
+        let $elemImgStatic = $('<img id="imgStatic">');
+        $elemCenter.append($elemImgStatic);
 
-            let elemCenter = $('<center>');
-            let elemImgStatic = $('<img id="imgStatic">');
-            elemCenter.append(elemImgStatic);
+        this.onCreateUI($parentContainer, $elemCenter);
+        $parentContainer.append($elemCenter);
 
-            let elemDivButtonBar = $('<div id="divButtonBar">');
-            let elemTableButtons = $('<table border=0 width=100% id="tblButtons">');
-            let elemRowButtons = $('<tbody><tr><td align="center"><button id="btnLeftAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
-            elemTableButtons.append(elemRowButtons);
-            elemDivButtonBar.append(elemTableButtons);
-            elemCenter.append(elemDivButtonBar);
-
-            $('#br-container').append(elemCenter);
-
-            let elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="inputImage">');
-            $('#br-container').append(elemInputImg);
-
-            let elemSpinner = $('<div id="imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
-            elemSpinner.css({left: (($(window).width() - elemSpinner.width()) / 2) + 'px',
-                top:  (($(window).height() - elemSpinner.height()) / 2) + 'px'});
-
-            $('#br-container').append(elemSpinner);
-        }
-
-        // Applying internal pointers and bindings; even if client sets `this.dontUseStockUI=true`, they still need to conform to these element ID values.
+        let $elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="inputImage">');
+        $parentContainer.append($elemInputImg);
 
         this.gumVideo = document.querySelector('video#gum');
-        this.audio = new Audio(baseURL + 'media/camera.wav');
+        this.cameraClickSound = new Audio(baseURL + 'media/camera.wav');
 
         $('#snap').click(this.snapClick.bind(this));
         $('#finish').click(this.finishClick.bind(this));
@@ -370,7 +458,6 @@ window.BlinkReceipt = {
         this.gumVideo.style.width = '100%';
 
         $('#tblButtons').css('top', ($(window).height() - $('#tblButtons').height()) + 'px');
-
         $('#snap').css('visibility', 'visible');
         $('#btnLeftAction').css('visibility', 'visible');
         $('#btnLeftAction').text('Cancel');
@@ -432,50 +519,29 @@ window.BlinkReceipt = {
         if (this.showAddButton) {
             this.showAddButton = false;
 
-            //if we have a previous static image, detach and re-insert it below current image so that current image will appear on top
-            if (this.staticImages.length > 1) {
-                let prevImg = this.staticImages[this.staticImages.length-2];
-                prevImg.detach().prependTo($('#br-container'));
-            }
-
-            if (this.staticImages.length > 0) {
-                let curImg = this.staticImages[this.staticImages.length-1];
-                curImg.animate({
-                    top: "-=" + curImg.height() * 0.9
-                });
-            }
-
             $('#gum').css('display', '');
-            $('#finish').css('visibility', 'hidden');
-            $('#snap').removeClass('plusButton').addClass('cameraButton');
-            $('#btnLeftAction').text('Cancel');
+
+            this.onFrameAddButtonClicked();
 
         } else {
             this.showAddButton = true;
 
             let canvas = document.createElement('canvas');
             let canvasContext = canvas.getContext('2d');
-
             canvas.width = this.gumVideo.videoWidth;
             canvas.height = this.gumVideo.videoHeight;
 
-            let counter = 0;
+            this.onScanFrameInitiated();
 
             let winningQuality = 0;
             let winningDataUrl = null;
-
-            $('#imgSpinner').css('display', '');
-
-            this.audio.play();
+            let counter = 0;
 
             let timer = setInterval(function() {
                 counter++;
 
                 canvasContext.drawImage(this.gumVideo, 0, 0, canvas.width, canvas.height);
-
-                let imData = canvasContext.getImageData(0, 0, canvas.width, canvas.height).data;
-
-                let frameQuality = this.getFrameQuality(imData, canvas.width, canvas.height);
+                let frameQuality = this.getFrameQuality(canvasContext.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
 
                 if (frameQuality > winningQuality) {
                     winningQuality = frameQuality;
@@ -484,37 +550,7 @@ window.BlinkReceipt = {
 
                 if (counter == 5) {
                     clearInterval(timer);
-
                     this.onScanFrameAcquired(winningDataUrl);
-            
-                    $('#imgSpinner').css('display', 'none');
-
-                    let scaleW = $('#gum').width() / this.gumVideo.videoWidth;
-                    let scaleH = $('#gum').height() / this.gumVideo.videoHeight;
-
-                    let scaleFactor = Math.min(scaleW, scaleH);
-
-                    let imgStatic = $('<img style="position: absolute; display: none">');
-                    imgStatic.css('width', scaleFactor * this.gumVideo.videoWidth + 'px');
-                    imgStatic.css('height', scaleFactor * this.gumVideo.videoHeight + 'px');
-                    imgStatic.css('left', (screen.width - scaleFactor * this.gumVideo.videoWidth) / 2 + "px");
-                    imgStatic.css('top', '0px');
-
-                    $('#br-container').prepend(imgStatic);
-
-                    imgStatic.on('load', function() {
-                        imgStatic.css('display', '');
-                        $('#gum').css('display', 'none');
-                        $('#finish').css('visibility', 'visible');
-                        $('#btnLeftAction').css('visibility', 'visible');
-                        $('#btnLeftAction').text('Retake');
-                        $('#snap').removeClass('cameraButton').addClass('plusButton');
-                    });
-                    
-                    imgStatic.get(0).setAttribute('src', winningDataUrl);
-
-                    this.staticImages.push(imgStatic);
-                    
                     this.sendImageToScanner(winningDataUrl);
                 }
             }.bind(this), 200);
@@ -566,27 +602,18 @@ window.BlinkReceipt = {
             });
         }
 
-        this.staticImages.forEach(function(curStaticImg) {
-            curStaticImg.remove();
-        });
-
-        this.staticImages = [];
-
-        this.onCancelled();
+        this.onCancelScan();
+        this.clearScan();
     },
 
     endScan: function() {
-        this.staticImages.forEach(function(curStaticImg) {
-            curStaticImg.remove();
-        });
+        this.onEndScan();
 
-        this.staticImages = [];
-                
         this.returnResults();
     },
 
-    dataURLtoBlob:  function(dataurl) {
-        let parts = dataurl.split(','), mime = parts[0].match(/:(.*?);/)[1];
+    dataURLtoBlob:  function(dataUrl) {
+        let parts = dataUrl.split(','), mime = parts[0].match(/:(.*?);/)[1];
         if(parts[0].indexOf('base64') !== -1) {
             let bstr = atob(parts[1]), n = bstr.length, u8arr = new Uint8Array(n);
             while(n--){
