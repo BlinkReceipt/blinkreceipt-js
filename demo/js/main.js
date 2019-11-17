@@ -29,6 +29,16 @@ function isMobileBrowser() {
 //BlinkReceipt.apiKey = '42aa8cae13104d95b5a7972b11c7b6c6';
 BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
 
+
+let parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
+parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
+
+BlinkReceipt.onUserChoseImage = function() {
+    $('#initialChoice').css('display','none');
+
+    parentStub.onUserChoseImage();
+};
+
 BlinkReceipt.onPreliminaryResults = function(parseResults) {
     console.log("Got frame results");
 }
@@ -36,7 +46,7 @@ BlinkReceipt.onPreliminaryResults = function(parseResults) {
 BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     console.log("Got raw text with len " + rawText.length + " and hash " + hash);
 
-    $('body').css('backgroundColor', this.oldBgColor);
+    $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
     $('#br-container').css('display', 'none');
     
     var matchProd = null;
@@ -62,14 +72,15 @@ BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
 };
 
 BlinkReceipt.onCancelScan = function() {
-    this.staticImages.forEach(function(curStaticImg) {
+    BlinkReceipt.staticImages.forEach(function(curStaticImg) {
         curStaticImg.remove();
     });
-    this.staticImages = [];
+    BlinkReceipt.staticImages = [];
 
-    $('body').css('backgroundColor', this.oldBgColor);
+    $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
     $('#initialChoice').css('display', '');
 };
+
 
 //Only set these properties if you want to force the sandbox environment and/or a specific version of the API
 BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
@@ -93,9 +104,6 @@ $('#btnMobileScan').click(function() {
 });
 
 $('#btnSelectImage').click(function() {
-    BlinkReceipt.onUserChoseImage = function() {
-        $('#initialChoice').css('display','none');
-    };
     BlinkReceipt.startStaticScan();
 });
 
