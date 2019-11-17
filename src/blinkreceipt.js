@@ -109,7 +109,7 @@ window.BlinkReceipt = {
     cameraClickSound: null,
     showAddButton: false,
     inSelectMode: false,
-    piLookupInProgress: false,
+    productInfoLookupInProgress: false,
     finishPending: false,
     parseResults: null,
     curFrameIdx: 1,
@@ -149,7 +149,7 @@ window.BlinkReceipt = {
 
         let $elemDivButtonBar = $('<div id="divButtonBar">');
         let $elemTableButtons = $('<table border=0 width=100% id="tblButtons">');
-        let $elemRowButtons = $('<tbody><tr><td align="center"><button id="btnLeftAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
+        let $elemRowButtons = $('<tbody><tr><td align="center"><button id="btnSecondaryAction" class="actionButton">Cancel</button></td><td align="center"><button id="snap" class="cameraButton"></button></td><td align="center"><button id="finish" class="actionButton">Finish</button></td></tr></tbody>');
         $elemTableButtons.append($elemRowButtons);
         $elemDivButtonBar.append($elemTableButtons);
         $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
@@ -201,7 +201,7 @@ window.BlinkReceipt = {
 
         $('#finish').css('visibility', 'hidden');
         $('#snap').removeClass('plusButton').addClass('cameraButton');
-        $('#btnLeftAction').text('Cancel');
+        $('#btnSecondaryAction').text('Cancel');
     },
 
     /**
@@ -237,14 +237,22 @@ window.BlinkReceipt = {
             $imgStatic.show();
             $('#gum').hide();
             $('#finish').css('visibility', 'visible');
-            $('#btnLeftAction').css('visibility', 'visible');
-            $('#btnLeftAction').text('Retake');
+            $('#btnSecondaryAction').css('visibility', 'visible');
+            $('#btnSecondaryAction').text('Retake');
             $('#snap').removeClass('cameraButton').addClass('plusButton');
         });
 
         $imgStatic.get(0).setAttribute('src', winningDataUrl);
 
         this.staticImages.push($imgStatic);
+    },
+
+    /**
+     * This callback is invoked when the #finish button is clicked on but there is still a product-info lookup in progress. The product-info lookup is started right after onScanAcquired() (for mobile scan),
+     *  or onUserChoseImage() (for "static" image selection).
+     */
+    onProductInfoLookupInProgress: function() {
+        $('#imgSpinner').show();
     },
 
     /**
@@ -264,6 +272,19 @@ window.BlinkReceipt = {
      */
     onPreliminaryResults: function(parseResults) {
 
+    },
+
+    /**
+     * This callback is invoked when the secondary button is clicked. Since our stock UI uses one button for multiple actions, this code decides how to differentiate them.
+     *  You may want to impelement yours differently, by overriding this. Or you may want to use your own separate buttons, in which case you'd still need to bind them to the respective functions shown here,
+     *  and bypass this callback altogether.
+     */
+    onBtnSecondaryActionClick: function() {
+        if ($('#btnSecondaryAction').text() == 'Retake') {
+            this.retakeScan();
+        } else if ($('#btnSecondaryAction').text() == 'Cancel') {
+            this.cancelScan();
+        }
     },
 
     /**
@@ -302,8 +323,8 @@ window.BlinkReceipt = {
     onUserChoseImage: function() {
         $('#finish').css('visibility', 'visible');
         $('#snap').css('visibility', 'visible');
-        $('#btnLeftAction').css('visibility', 'visible');
-        $('#btnLeftAction').text('Cancel');
+        $('#btnSecondaryAction').css('visibility', 'visible');
+        $('#btnSecondaryAction').text('Cancel');
 
         if ($(window).width() > 500) {
             $('#divButtonBar').css('width', $('#imgStatic').width() + 'px');
@@ -318,10 +339,13 @@ window.BlinkReceipt = {
      * This callback is invoked after the retaking of a scan ("retake" button).
         */
     onRetakeScan: function() {
-        $('#imgStatic').hide();
-        $('#gum').show();
+        if (this.staticImages.length > 0) {
+            let lastImg = this.staticImages.pop();
+            lastImg.remove();
+        }
+
         $('#finish').css('visibility', 'hidden');
-        $('#btnLeftAction').text('Cancel');
+        $('#btnSecondaryAction').text('Cancel');
         $('#snap').removeClass('plusButton').addClass('cameraButton');
     },
 
@@ -332,7 +356,7 @@ window.BlinkReceipt = {
         $('#snap').removeClass('plusButton').addClass('cameraButton');
         $('#snap').css('visibility', 'hidden');
         $('#finish').css('visibility', 'hidden');
-        $('#btnLeftAction').css('visibility', 'hidden');
+        $('#btnSecondaryAction').css('visibility', 'hidden');
     },
 
     /**
@@ -364,11 +388,12 @@ window.BlinkReceipt = {
     onStreamLoadedMetadata: function() {
         $('#tblButtons').css('top', ($(window).height() - $('#tblButtons').height()) + 'px');
         $('#snap').css('visibility', 'visible');
-        $('#btnLeftAction').css('visibility', 'visible');
-        $('#btnLeftAction').text('Cancel');
+        $('#btnSecondaryAction').css('visibility', 'visible');
+        $('#btnSecondaryAction').text('Cancel');
     },
 
-    // end callbacks section
+    // ++++++++++++++++ end callbacks section ++++++++++++++++
+
 
     isSecureOrigin: function() {
         return (location.protocol === 'https:' || location.hostname === 'localhost');
@@ -437,7 +462,7 @@ window.BlinkReceipt = {
         this.parseResults = null;
         this.curFrameIdx = 1;
         this.blinkReceiptId = null;
-        this.piLookupInProgress = false;
+        this.productInfoLookupInProgress = false;
         this.showAddButton = false;
         this.inSelectMode = false;
         this.finishPending = false;
@@ -471,7 +496,7 @@ window.BlinkReceipt = {
 
         $('#snap').click(this.snapClick.bind(this));
         $('#finish').click(this.finishClick.bind(this));
-        $('#btnLeftAction').click(this.btnLeftClick.bind(this));
+        $('#btnSecondaryAction').click(this.onBtnSecondaryActionClick.bind(this));
         $('#gum').on('loadedmetadata', this.streamLoadedMetadata.bind(this));
         $('#inputImage').on("change", this.staticImgChange.bind(this));
     },
@@ -569,31 +594,21 @@ window.BlinkReceipt = {
             });
         }
 
-        if (this.piLookupInProgress) {
-            $('#imgSpinner').show();
+        if (this.productInfoLookupInProgress) {
             this.finishPending = true;
+            this.onProductInfoLookupInProgress();
             return;
         }
 
         this.endScan();
     },
 
-    btnLeftClick: function() {
-        if ($('#btnLeftAction').text() == 'Retake') {
-            this.retakeScan();
-        } else {
-            this.cancelScan();
-        }
-    },
-
     retakeScan: function() {
-        if (this.staticImages.length > 0) {
-            let lastImg = this.staticImages.pop();
-            lastImg.remove();
-        }
-
         this.showAddButton = false;
         this.curFrameIdx--;
+
+        $('#imgStatic').hide();
+        $('#gum').show()
 
         this.onRetakeScan();
     },
@@ -736,7 +751,7 @@ window.BlinkReceipt = {
             }
         }
 
-        this.piLookupInProgress = true;
+        this.productInfoLookupInProgress = true;
 
         $.post({
             url: "https://" + this.apiDomain + "/api_scan" + (this.apiVersion === null ? '' : '/v' + this.apiVersion),
@@ -768,7 +783,7 @@ window.BlinkReceipt = {
                     }
                 }
 
-                this.piLookupInProgress = false;
+                this.productInfoLookupInProgress = false;
 
                 if (this.finishPending) {
                     $('#imgSpinner').hide();
