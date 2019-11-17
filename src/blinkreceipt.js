@@ -149,7 +149,7 @@ window.BlinkReceipt = {
 
         let $elemDivButtonBar = $('<div id="brjs-divButtonBar">');
         let $elemTableButtons = $('<table border=0 width=100% id="brjs-tblButtons">');
-        let $elemRowButtons = $('<tbody><tr><td align="center"><button id="brjs-btnSecondaryAction" class="brjs-actionButton">Cancel</button></td><td align="center"><button id="brjs-snap" class="brjs-cameraButton"></button></td><td align="center"><button id="brjs-finish" class="actionButton">Finish</button></td></tr></tbody>');
+        let $elemRowButtons = $('<tbody><tr><td align="center"><button id="brjs-btnSecondaryAction" class="brjs-actionButton">Cancel</button></td><td align="center"><button id="brjs-snap" class="brjs-cameraButton"></button></td><td align="center"><button id="brjs-finish" class="brjs-actionButton">Finish</button></td></tr></tbody>');
         $elemTableButtons.append($elemRowButtons);
         $elemDivButtonBar.append($elemTableButtons);
         $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
@@ -488,7 +488,7 @@ window.BlinkReceipt = {
         this.onCreateUI($parentContainer, $elemCenter);
         $parentContainer.append($elemCenter);
 
-        let $elemInputImg = $('<input type="file" accept="image/*;capture=camera" id="brjs-inputImage">');
+        let $elemInputImg = $('<input type="file" accept="image/*" id="brjs-inputImage">');
         $parentContainer.append($elemInputImg);
 
         this.gumVideo = document.querySelector('video#brjs-gum');
