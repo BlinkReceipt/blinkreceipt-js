@@ -1,8 +1,5 @@
-#btnSelectImage {
-	cursor: pointer;
-}
 
-button#snap {
+button#brjs-snap {
 	background-size: 60px 60px;
 	width: 60px;
 	height: 60px;
@@ -10,32 +7,32 @@ button#snap {
 	visibility: hidden;
 }
 
-.cameraButton {
+.brjs-cameraButton {
 	background-image: url('../media/camera-big.png');
 }
 
-.plusButton {
+.brjs-plusButton {
 	background-image: url('../media/plus.png');
 	cursor: pointer;
 }
 
-.edgeLabel {
+.brjs-edgeLabel {
 	color: white; position: absolute; font-family: Arial;
 }
 
-img#imgStatic {
+img#brjs-imgStatic {
 	display: none;
 }
 
-table#tblButtons {
+table#brjs-tblButtons {
 	position: absolute; left: 0px;
 }
 
-table#tblButtons tr {
+table#brjs-tblButtons tr {
 	width: 33%;
 }
 
-.actionButton {
+.brjs-actionButton {
 	width: 100px; 
 	height: 60px; 
 	border: none; 
@@ -47,11 +44,11 @@ table#tblButtons tr {
 	cursor: pointer;
 }
 
-div#imgSpinner {
+div#brjs-imgSpinner {
 	background-image: url('../media/Spinner-1s-200px.gif');
 	background-size: contain;
 }
 
-input#inputImage {
+input#brjs-inputImage {
 	visibility: hidden;
 }

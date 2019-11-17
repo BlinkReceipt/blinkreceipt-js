@@ -47,7 +47,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     console.log("Got raw text with len " + rawText.length + " and hash " + hash);
 
     $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
-    $('#br-container').hide();
+    $('#brjs-container').hide();
     
     var matchProd = null;
     if (typeof brand !== 'undefined') {
