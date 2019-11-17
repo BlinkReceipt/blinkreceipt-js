@@ -209,7 +209,7 @@ window.BlinkReceipt = {
      */
     onScanInitiated: function() {
         this.cameraClickSound.play();
-        $('#imgSpinner').css('display', '');
+        $('#imgSpinner').show();
     },
 
     /**
@@ -219,32 +219,32 @@ window.BlinkReceipt = {
      * @param winningDataUrl {string} output of the HTMLCanvasElement.toDataURL() method, of type 'image/jpeg'; a UTF-16 string (https://developer.mozilla.org/en-US/docs/Web/API/DOMString). It can be assigned to the "src" attribute of an <img> tag.
      */
     onScanAcquired: function(winningDataUrl) {
-        $('#imgSpinner').css('display', 'none');
+        $('#imgSpinner').hide();
 
         let scaleW = $('#gum').width() / this.gumVideo.videoWidth;
         let scaleH = $('#gum').height() / this.gumVideo.videoHeight;
         let scaleFactor = Math.min(scaleW, scaleH);
 
-        let imgStatic = $('<img style="position: absolute; display: none">');
-        imgStatic.css('width', scaleFactor * this.gumVideo.videoWidth + 'px');
-        imgStatic.css('height', scaleFactor * this.gumVideo.videoHeight + 'px');
-        imgStatic.css('left', (screen.width - scaleFactor * this.gumVideo.videoWidth) / 2 + "px");
-        imgStatic.css('top', '0px');
+        let $imgStatic = $('<img style="position: absolute; display: none">');
+        $imgStatic.css('width', scaleFactor * this.gumVideo.videoWidth + 'px');
+        $imgStatic.css('height', scaleFactor * this.gumVideo.videoHeight + 'px');
+        $imgStatic.css('left', (screen.width - scaleFactor * this.gumVideo.videoWidth) / 2 + "px");
+        $imgStatic.css('top', '0px');
 
-        $('#br-container').prepend(imgStatic);
+        $('#br-container').prepend($imgStatic);
 
-        imgStatic.on('load', function() {
-            imgStatic.css('display', '');
-            $('#gum').css('display', 'none');
+        $imgStatic.on('load', function() {
+            $imgStatic.show();
+            $('#gum').hide();
             $('#finish').css('visibility', 'visible');
             $('#btnLeftAction').css('visibility', 'visible');
             $('#btnLeftAction').text('Retake');
             $('#snap').removeClass('cameraButton').addClass('plusButton');
         });
 
-        imgStatic.get(0).setAttribute('src', winningDataUrl);
+        $imgStatic.get(0).setAttribute('src', winningDataUrl);
 
-        this.staticImages.push(imgStatic);
+        this.staticImages.push($imgStatic);
     },
 
     /**
@@ -255,7 +255,7 @@ window.BlinkReceipt = {
      */
     onFinished: function(parseResults, jsonString, hash) {
         $('body').css('backgroundColor', this.oldBgColor);
-        $('#br-container').css('display', 'none');
+        $('#br-container').hide();
     },
 
     /**
@@ -318,8 +318,8 @@ window.BlinkReceipt = {
      * This callback is invoked after the retaking of a scan ("retake" button).
         */
     onRetakeScan: function() {
-        $('#imgStatic').css('display', 'none');
-        $('#gum').css('display', '');
+        $('#imgStatic').hide();
+        $('#gum').show();
         $('#finish').css('visibility', 'hidden');
         $('#btnLeftAction').text('Cancel');
         $('#snap').removeClass('plusButton').addClass('cameraButton');
@@ -443,9 +443,9 @@ window.BlinkReceipt = {
         this.finishPending = false;
         this.staticImages = [];
 
-        $('#br-container').css('display', '');
-        $('#gum').css('display', 'none');
-        $('#imgStatic').css('display', 'none');
+        $('#br-container').show();
+        $('#gum').hide();
+        $('#imgStatic').hide();
 
         this.onClearScan();
     },
@@ -489,7 +489,7 @@ window.BlinkReceipt = {
 
         image.onload = function() {
             $('#imgStatic').css('display', 'initial');
-            $('#gum').css('display', 'none');
+            $('#gum').hide();
 
             this.onUserChoseImage();
 
@@ -522,7 +522,7 @@ window.BlinkReceipt = {
         if (this.showAddButton) {
             this.showAddButton = false;
 
-            $('#gum').css('display', '');
+            $('#gum').show();
 
             this.onAddScanButtonClicked();
 
@@ -570,7 +570,7 @@ window.BlinkReceipt = {
         }
 
         if (this.piLookupInProgress) {
-            $('#imgSpinner').css('display', '');
+            $('#imgSpinner').show();
             this.finishPending = true;
             return;
         }
@@ -771,7 +771,7 @@ window.BlinkReceipt = {
                 this.piLookupInProgress = false;
 
                 if (this.finishPending) {
-                    $('#imgSpinner').css('display', 'none');
+                    $('#imgSpinner').hide();
                     this.endScan();
                 }
             }.bind(this),

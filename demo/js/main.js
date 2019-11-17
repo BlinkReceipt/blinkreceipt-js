@@ -47,7 +47,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     console.log("Got raw text with len " + rawText.length + " and hash " + hash);
 
     $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
-    $('#br-container').css('display', 'none');
+    $('#br-container').hide();
     
     var matchProd = null;
     if (typeof brand !== 'undefined') {
@@ -78,7 +78,7 @@ BlinkReceipt.onCancelScan = function() {
     BlinkReceipt.staticImages = [];
 
     $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
-    $('#initialChoice').css('display', '');
+    $('#initialChoice').show();
 };
 
 
@@ -112,8 +112,8 @@ $('#lnkGoBack').click(function(event) {
 
     BlinkReceipt.clearScan();
 
-    $('#divJsonRes').css('display', 'none');
-    $('#initialChoice').css('display', '');
+    $('#divJsonRes').hide();
+    $('#initialChoice').show();
 
     $('#tblProds tr').not('.protoRow').remove();
 
@@ -166,7 +166,7 @@ function showProdTable(parseResults) {
     }
 
     if (promoText.length > 0) {
-        $('#spanPromo').html(promoText + '<br>').css('display', '');
+        $('#spanPromo').html(promoText + '<br>').show();
     }
 
     if (parseResults.merchant_name) {
@@ -256,8 +256,8 @@ function showProdTable(parseResults) {
 
             newRowTop.appendTo($('#tblProds tbody'));
 
-            var newRowBottom = $('#protoRowBottom').clone().removeClass('protoRow');
-            newRowBottom.css('display', '');
+            var $newRowBottom = $('#protoRowBottom').clone().removeClass('protoRow');
+            $newRowBottom.show();
 
             var extraInfo = [];
             if (curProd.brand && curProd.brand.length > 0) {
@@ -273,10 +273,10 @@ function showProdTable(parseResults) {
                 extraInfo.push('Receipt Text: ' + curProd.rsd.value);
             }
             if (extraInfo.length > 0) {
-                newRowBottom.find('.addlData').html(extraInfo.join('<br>'));
+                $newRowBottom.find('.addlData').html(extraInfo.join('<br>'));
             }
 
-            newRowBottom.appendTo($('#tblProds tbody'));
+            $newRowBottom.appendTo($('#tblProds tbody'));
         }
     }
 }
