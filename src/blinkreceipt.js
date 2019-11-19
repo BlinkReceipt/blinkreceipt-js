@@ -105,6 +105,38 @@ window.BlinkReceipt = {
     clientUserId: '',
 
     /**
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the top
+     *
+     * _Optional_
+     * @type {number}
+     */
+    cameraCaptureCropPercentTop: 0,
+
+    /**
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the bottom
+     *
+     * _Optional_
+     * @type {number}
+     */
+    cameraCaptureCropPercentBottom: 0,
+
+    /**
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the left
+     *
+     * _Optional_
+     * @type {number}
+     */
+    cameraCaptureCropPercentLeft: 0,
+
+    /**
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the right
+     *
+     * _Optional_
+     * @type {number}
+     */
+    cameraCaptureCropPercentRight: 0,
+
+    /**
      * Debugging mode; more info will be shown in the console if this is set to true
      *
      * _Optional_
@@ -618,8 +650,10 @@ window.BlinkReceipt = {
 
             let canvas = document.createElement('canvas');
             let canvasContext = canvas.getContext('2d');
-            canvas.width = this.gumVideo.videoWidth;
-            canvas.height = this.gumVideo.videoHeight;
+            // canvas.width = this.gumVideo.videoWidth;
+            // canvas.height = this.gumVideo.videoHeight;
+            canvas.width = this.gumVideo.videoWidth * (100 - (this.cameraCaptureCropPercentLeft + this.cameraCaptureCropPercentRight)) / 100;
+            canvas.height = this.gumVideo.videoHeight * (100 - (this.cameraCaptureCropPercentTop + this.cameraCaptureCropPercentBottom)) / 100;
 
             this.onScanInitiated();
 
@@ -630,7 +664,8 @@ window.BlinkReceipt = {
             let timer = setInterval(function() {
                 counter++;
 
-                canvasContext.drawImage(this.gumVideo, 0, 0, canvas.width, canvas.height);
+                //canvasContext.drawImage(this.gumVideo, 0, 0, canvas.width, canvas.height);
+                canvasContext.drawImage(this.gumVideo, (this.gumVideo.videoWidth * this.cameraCaptureCropPercentLeft / 100), (this.gumVideo.videoHeight * this.cameraCaptureCropPercentTop / 100), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
                 let frameQuality = this.getFrameQuality(canvasContext.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
 
                 if (frameQuality > winningQuality) {
