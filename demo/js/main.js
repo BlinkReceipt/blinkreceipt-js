@@ -29,21 +29,27 @@ function isMobileBrowser() {
 //BlinkReceipt.apiKey = '42aa8cae13104d95b5a7972b11c7b6c6';
 BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
 
+BlinkReceipt.debugMode = true;  // descriptive info in console
+
 
 let parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
 parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
 
 BlinkReceipt.onUserChoseImage = function() {
+    BlinkReceipt.showDebugInfo('method', 'onUserChoseImage');
+
     $('#initialChoice').css('display','none');
 
     parentStub.onUserChoseImage();
 };
 
 BlinkReceipt.onPreliminaryResults = function(parseResults) {
+    BlinkReceipt.showDebugInfo('method', 'onPreliminaryResults');
     console.log("Got frame results");
 }
 
 BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
+    BlinkReceipt.showDebugInfo('method', 'onFinished');
     console.log("Got raw text with len " + rawText.length + " and hash " + hash);
 
     $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
@@ -68,10 +74,13 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
 };
 
 BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
+    BlinkReceipt.showDebugInfo('method', 'onStreamCaptureError');
     alert("BlinkReceipt error: " + msg);
 };
 
 BlinkReceipt.onCancelScan = function() {
+    BlinkReceipt.showDebugInfo('method', 'onCancelScan');
+
     BlinkReceipt.staticImages.forEach(function(curStaticImg) {
         curStaticImg.remove();
     });
