@@ -117,7 +117,7 @@ window.BlinkReceipt = {
     cameraClickSound: null,
     showAddButton: false,
     inSelectMode: false,
-    productInfoLookupInProgress: false,
+    waitingForScanResults: false,
     finishPending: false,
     parseResults: null,
     curFrameIdx: 1,
@@ -275,8 +275,8 @@ window.BlinkReceipt = {
      * This callback is invoked when the #brjs-finish button is clicked on but there is still a product-info lookup in progress. The product-info lookup is started right after onScanAcquired() (for mobile scan),
      *  or onUserChoseImage() (for "static" image selection).
      */
-    onProductInfoLookupInProgress: function() {
-        this.showDebugInfo('method', 'onProductInfoLookupInProgress');
+    onWaitingForScanResults: function() {
+        this.showDebugInfo('method', 'onWaitingForScanResults');
 
         $('#brjs-imgSpinner').show();
     },
@@ -516,7 +516,7 @@ window.BlinkReceipt = {
         this.parseResults = null;
         this.curFrameIdx = 1;
         this.blinkReceiptId = null;
-        this.productInfoLookupInProgress = false;
+        this.waitingForScanResults = false;
         this.showAddButton = false;
         this.inSelectMode = false;
         this.finishPending = false;
@@ -658,9 +658,9 @@ window.BlinkReceipt = {
             });
         }
 
-        if (this.productInfoLookupInProgress) {
+        if (this.waitingForScanResults) {
             this.finishPending = true;
-            this.onProductInfoLookupInProgress();
+            this.onWaitingForScanResults();
             return;
         }
 
@@ -821,7 +821,7 @@ window.BlinkReceipt = {
             }
         }
 
-        this.productInfoLookupInProgress = true;
+        this.waitingForScanResults = true;
 
         $.post({
             url: "https://" + this.apiDomain + "/api_scan" + (this.apiVersion === null ? '' : '/v' + this.apiVersion),
@@ -853,7 +853,7 @@ window.BlinkReceipt = {
                     }
                 }
 
-                this.productInfoLookupInProgress = false;
+                this.waitingForScanResults = false;
 
                 if (this.finishPending) {
                     $('#brjs-imgSpinner').hide();
