@@ -1,3 +1,9 @@
+@media only screen and (orientation:landscape){
+	body {
+		height: 100vw;
+		transform: rotate(90deg);
+	}
+}
 
 button#brjs-snap {
 	background-size: 60px 60px;
