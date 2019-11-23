@@ -576,8 +576,11 @@ window.BlinkReceipt = {
 
         let $parentContainer = $('#brjs-container');
 
-        let $elemVideo = $('<video id="brjs-gum" autoplay muted playsinline style="display: none"></video>');
+        let $elemVideo = $('<video id="brjs-gum" autoplay muted playsinline style="display:none; object-fit:fill;"></video>');
         $parentContainer.append($elemVideo);
+
+        this.gumVideo = document.querySelector('video#brjs-gum');
+        this.cameraClickSound = new Audio(baseURL + 'media/camera.wav');
 
         let $elemCenter = $('<center>');
         let $elemImgStatic = $('<img id="brjs-imgStatic">');
@@ -588,9 +591,6 @@ window.BlinkReceipt = {
 
         let $elemInputImg = $('<input type="file" accept="image/*" id="brjs-inputImage">');
         $parentContainer.append($elemInputImg);
-
-        this.gumVideo = document.querySelector('video#brjs-gum');
-        this.cameraClickSound = new Audio(baseURL + 'media/camera.wav');
 
         $('#brjs-snap').click(this.snapClick.bind(this));
         $('#brjs-finish').click(this.finishClick.bind(this));

@@ -1,0 +1,472 @@
+$(document).ready(function() {
+    if ($(window).width() > 500) {
+        $('#resultsContainer').css('width', '500px');
+    } else {
+        $('#resultsContainer').css('width', '100%');
+    }
+
+    if (!BlinkReceipt.isSecureOrigin()) {
+        alert('getUserMedia() must be run from a secure origin: HTTPS or localhost.');
+    }
+    if (navigator.mediaDevices && isMobileBrowser()) {
+        $('#btnMobileScan').css('display','');
+    }
+
+    $('#initialChoice').css('top', ($(window).height() - $('#initialChoice').height()) / 2 + 'px');
+});
+
+function isMobileBrowser() {
+    if( navigator.userAgent.match(/Android/i)
+     || navigator.userAgent.match(/iPhone/i)
+     || navigator.userAgent.match(/iPad/i)
+     || navigator.userAgent.match(/iPod/i)) {
+        return true;
+    }
+    return false;
+}
+
+//BlinkReceipt.apiKey = '9b21415cd442f62123b6f94a10942a88';
+//BlinkReceipt.apiKey = '42aa8cae13104d95b5a7972b11c7b6c6';
+BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
+
+BlinkReceipt.debugMode = true;  // descriptive info in console
+
+BlinkReceipt.cameraCaptureCropValueTop = 4;
+BlinkReceipt.cameraCaptureCropValueBottom = 4;
+BlinkReceipt.cameraCaptureCropValueLeft = 7;
+BlinkReceipt.cameraCaptureCropValueRight = 7;
+
+let parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
+parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
+
+BlinkReceipt.onCreateUI = function($parentContainer, $elemCenter) {
+    BlinkReceipt.showDebugInfo('method', 'onCreateUI');
+
+    let scanFrame = $('<div id="scanFrame" style="display:none;"></div>')
+    $parentContainer.append(scanFrame);
+
+    let $elemDivButtonBar = $('<div id="brjs-divButtonBar">');
+    let $elemTableButtons = $('<table border=0 width=100% id="brjs-tblButtons">');
+    let $elemRowButtons = $('<tbody><tr><td align="center"><button id="brjs-btnSecondaryAction" class="brjs-actionButton">Cancel</button></td><td align="center"><button id="brjs-snap" class="brjs-cameraButton"></button></td><td align="center"><button id="brjs-finish" class="brjs-actionButton">Finish</button></td></tr></tbody>');
+    $elemTableButtons.append($elemRowButtons);
+    $elemDivButtonBar.append($elemTableButtons);
+    $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
+
+    let $elemSpinner = $('<div id="brjs-imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
+    $elemSpinner.css({
+        left: (($(window).width() - $elemSpinner.width()) / 2) + 'px',
+        top:  (($(window).height() - $elemSpinner.height()) / 2) + 'px'
+    });
+    $parentContainer.append($elemSpinner);
+};
+
+BlinkReceipt.onStartMobileScan = function() {
+    BlinkReceipt.showDebugInfo('method', 'onStartMobileScan');
+
+    BlinkReceipt.oldBgColor = $('body').css('backgroundColor');
+    $('body').css('backgroundColor', 'black');
+};
+
+BlinkReceipt.onUserChoseImage = function() {
+    BlinkReceipt.showDebugInfo('method', 'onUserChoseImage');
+
+    $('#initialChoice').css('display','none');
+
+    parentStub.onUserChoseImage();
+};
+
+BlinkReceipt.onScanAcquired = function(winningDataUrl) {
+    BlinkReceipt.showDebugInfo('method', 'onScanAcquired');
+
+    $('#scanFrame').hide();
+    $('#brjs-imgSpinner').hide();
+
+    let scaleW = $('#brjs-gum').width() / this.gumVideo.videoWidth;
+    let scaleH = $('#brjs-gum').height() / this.gumVideo.videoHeight;
+    let scaleFactor = Math.min(scaleW, scaleH);
+
+    let $imgStatic = $('<img style="position: absolute; display: none">');
+    $imgStatic.css('width', scaleFactor * this.gumVideo.videoWidth + 'px');
+    $imgStatic.css('height', scaleFactor * this.gumVideo.videoHeight + 'px');
+    $imgStatic.css('left', (screen.width - scaleFactor * this.gumVideo.videoWidth) / 2 + "px");
+    $imgStatic.css('top', '0px');
+
+    $('#brjs-container').prepend($imgStatic);
+
+    $imgStatic.on('load', function() {
+        $imgStatic.show();
+        $('#brjs-gum').hide();
+        $('#brjs-finish').css('visibility', 'visible');
+        $('#brjs-btnSecondaryAction').css('visibility', 'visible');
+        $('#brjs-btnSecondaryAction').text('Retake');
+        $('#brjs-snap').removeClass('brjs-cameraButton').addClass('brjs-plusButton');
+    });
+
+    $imgStatic.get(0).setAttribute('src', winningDataUrl);
+
+    this.staticImages.push($imgStatic);
+};
+
+BlinkReceipt.onRetakeScan = function() {
+    BlinkReceipt.showDebugInfo('method', 'onRetakeScan');
+
+    if (BlinkReceipt.staticImages.length > 0) {
+        let lastImg = BlinkReceipt.staticImages.pop();
+        lastImg.remove();
+    }
+
+    $('#scanFrame').show();
+    $('#brjs-finish').css('visibility', 'hidden');
+    $('#brjs-btnSecondaryAction').text('Cancel');
+    $('#brjs-snap').removeClass('brjs-plusButton').addClass('brjs-cameraButton');
+};
+
+BlinkReceipt.onPreliminaryResults = function(parseResults) {
+    BlinkReceipt.showDebugInfo('method', 'onPreliminaryResults');
+    console.log("Got frame results");
+};
+
+BlinkReceipt.onAddScanButtonClicked = function() {
+    BlinkReceipt.showDebugInfo('method', 'onAddScanButtonClicked');
+
+    //if we have a previous static image, detach and re-insert it below current image so that current image will appear on top
+    if (BlinkReceipt.staticImages.length > 1) {
+        let prevImg = BlinkReceipt.staticImages[BlinkReceipt.staticImages.length-2];
+        prevImg.detach().prependTo($('#brjs-container'));
+    }
+
+    if (BlinkReceipt.staticImages.length > 0) {
+        let curImg = BlinkReceipt.staticImages[BlinkReceipt.staticImages.length-1];
+        curImg.animate({
+            top: "-=" + curImg.height() * 0.95
+        });
+    }
+
+    $('#scanFrame').show();
+    $('#brjs-finish').css('visibility', 'hidden');
+    $('#brjs-snap').removeClass('brjs-plusButton').addClass('brjs-cameraButton');
+    $('#brjs-btnSecondaryAction').text('Cancel');
+};
+
+BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
+    BlinkReceipt.showDebugInfo('method', 'onFinished');
+    console.log("Got raw text with len " + rawText.length + " and hash " + hash);
+
+    $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
+    $('#brjs-container').hide();
+
+    $('#scanFrame').hide();
+    
+    var matchProd = null;
+    if (typeof brand !== 'undefined') {
+        hardcodedProds.forEach(function(curProd) {
+            if (curProd.id == brand) {
+                matchProd = curProd;
+            }
+        });
+    }
+
+    if (matchProd != null) {
+        showProd(matchProd);
+    } else {
+        showProdTable(parseResults);
+
+        $('#divJsonRes').css('display','');
+    }
+};
+
+BlinkReceipt.onStreamLoadedMetadata = function() {
+    $('#scanFrame').css({
+        position: 'absolute',
+        padding: 0,
+        width: ($('#brjs-gum').width() * (100 - (BlinkReceipt.cameraCaptureCropValueLeft + BlinkReceipt.cameraCaptureCropValueRight)) / 100) + 'px',
+        height: ($('#brjs-gum').height() * (100 - (BlinkReceipt.cameraCaptureCropValueTop + BlinkReceipt.cameraCaptureCropValueBottom)) / 100) + 'px',
+        left: ($('#brjs-gum').offset().left + ($('#brjs-gum').width() * BlinkReceipt.cameraCaptureCropValueLeft / 100)) + 'px',
+        top: ($('#brjs-gum').offset().top + ($('#brjs-gum').height() * BlinkReceipt.cameraCaptureCropValueTop / 100)) + 'px',
+        border: '1px solid Orange',
+    }).show();
+
+    $('#brjs-tblButtons').css('top', ($(window).height() - $('#brjs-tblButtons').height()) + 'px');
+    $('#brjs-snap').css('visibility', 'visible');
+    $('#brjs-btnSecondaryAction').css('visibility', 'visible');
+    $('#brjs-btnSecondaryAction').text('Cancel');
+};
+
+BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
+    BlinkReceipt.showDebugInfo('method', 'onStreamCaptureError');
+    alert("BlinkReceipt error: " + msg);
+};
+
+BlinkReceipt.onCancelScan = function() {
+    BlinkReceipt.showDebugInfo('method', 'onCancelScan');
+
+    BlinkReceipt.staticImages.forEach(function(curStaticImg) {
+        curStaticImg.remove();
+    });
+    BlinkReceipt.staticImages = [];
+
+    $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
+    $('#initialChoice').show();
+
+    $('#scanFrame').hide();
+};
+
+
+//Only set these properties if you want to force the sandbox environment and/or a specific version of the API
+BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
+// BlinkReceipt.apiDomain = 'scan-ph.blinkreceipt.com';
+//BlinkReceipt.apiVersion = 9;
+
+var queryParams = new URLSearchParams(window.location.search);
+var slug = queryParams.get('slug');
+if (slug && slug.length > 0) {
+    BlinkReceipt.validatePromotions = true;
+    BlinkReceipt.promotionIds = [slug];
+}
+var apiKey = queryParams.get('api_key');
+if (apiKey && apiKey.length > 0) {
+    BlinkReceipt.apiKey = apiKey;
+}
+
+$('#btnMobileScan').click(function() {
+    $('#initialChoice').css('display','none');
+    BlinkReceipt.startMobileScan();
+});
+
+$('#btnSelectImage').click(function() {
+    BlinkReceipt.startStaticScan();
+});
+
+$('#lnkGoBack').click(function(event) {
+    event.preventDefault();
+
+    BlinkReceipt.clearScan();
+
+    $('#divJsonRes').hide();
+    $('#initialChoice').show();
+
+    $('#tblProds tr').not('.protoRow').remove();
+
+    $('#spanMerchant').css('display','none');
+    $('#spanAddress').css('display','none');
+    $('#spanCSZ').css('display','none');
+    $('#spanPhone').css('display','none');
+    $('#cellDate').text('');
+    $('#cellTime').text('');
+    $('#cellSubtotal').text('');
+    $('#cellTaxes').text('');
+    $('#cellTotal').text('');
+});
+
+function showProdTable(parseResults) {
+    $('#loading').css('display','none');
+
+    if (!parseResults) return;
+
+    var qualifiedProdIndexes = [];
+
+    var promoText = '';
+
+    if (parseResults.qualifiedPromos) {
+
+        var qualifiedSlugs = [];
+
+        parseResults.qualifiedPromos.forEach(function(promo) {
+            qualifiedSlugs.push(promo.slug);
+
+            if (promo.relatedProductIndexes) {
+                promo.relatedProductIndexes.forEach(function(prodIdx) {
+                    qualifiedProdIndexes.push(prodIdx);
+                });
+            }
+        });
+
+        promoText += 'Qualified: ' + qualifiedSlugs.join(', ') + '<br>';
+    }
+
+    if (parseResults.unqualifiedPromos) {
+        var unqualifiedSlugs = [];
+
+        parseResults.unqualifiedPromos.forEach(function(promo) {
+            unqualifiedSlugs.push(promo.slug + ': ' + promo.errorMessage + '<br>');
+
+        });
+
+        promoText += 'Not qualified: <br>' + unqualifiedSlugs.join(', ') + '<br>';
+    }
+
+    if (promoText.length > 0) {
+        $('#spanPromo').html(promoText + '<br>').show();
+    }
+
+    if (parseResults.merchant_name) {
+        $('#spanMerchant').html(parseResults.merchant_name).css('display','');
+    }
+    if (parseResults.store_street) {
+        $('#spanAddress').html('<br>' + parseResults.store_street.value).css('display','');
+    }
+    var cityStateZip = '';
+    if (parseResults.store_city) {
+        cityStateZip = parseResults.store_city.value;
+    }
+    if (parseResults.store_state) {
+        if (cityStateZip.length > 0) cityStateZip += ', ';
+        cityStateZip += parseResults.store_state.value;
+    }
+    if (parseResults.store_zip) {
+        if (cityStateZip.length > 0) cityStateZip += ' ';
+        cityStateZip += parseResults.store_zip.value;
+    }
+    if (cityStateZip.length > 0) {
+        $('#spanCSZ').html('<br>' + cityStateZip).css('display','');
+    }
+    if (parseResults.phones) {
+        $('#spanPhone').html('<br>' + parseResults.phones[0].value).css('display','');
+    }
+
+    if (parseResults.date) {
+        let dateObj = new Date(parseResults.date.value);
+        let purchaseDate = moment(dateObj.toISOString());
+        $('#cellDate').text('Date: ' + purchaseDate.format('MMM D, YYYY'));
+    }
+    if (parseResults.time) {
+        var purchaseTime = moment('2018-01-01 ' + parseResults.time.value);
+        $('#cellTime').text('Time: ' + purchaseTime.format('h:mm A'));
+    }
+    if (parseResults.subtotal) {
+        $('#cellSubtotal').text('Subtotal: $' + parseResults.subtotal.value.toFixed(2));
+    }
+    if (parseResults.taxes) {
+        $('#cellTaxes').text('Tax: $' + parseResults.taxes.value.toFixed(2));
+    }
+    if (parseResults.total) {
+        $('#cellTotal').text('Total: $' + parseResults.total.value.toFixed(2));
+    }
+
+    if (parseResults.products) {
+        for (var i in parseResults.products) {
+            var curProd = parseResults.products[i];
+
+            var nameToShow = '';
+            if (curProd.rsd && curProd.rsd.value && curProd.rsd.value.length > 0) {
+                nameToShow = curProd.rsd.value;
+            }
+            if (curProd.product_name && curProd.product_name.length > 0) {
+                nameToShow = curProd.product_name;
+            }
+
+            var newRowTop = $('#protoRowTop').clone().removeClass('protoRow');
+            newRowTop.css('display','');
+            newRowTop.find('.prodName').text(nameToShow);
+
+            if (qualifiedProdIndexes.indexOf(parseInt(i)) != -1) {
+                newRowTop.css('background-color', 'yellow');
+            }
+
+            if (curProd.price && curProd.price.value > 0) {
+                newRowTop.find('.price').text('$' + curProd.price.value.toFixed(2));
+            }
+
+            if (curProd.size && curProd.size.length > 0) {
+                newRowTop.find('.size').text(curProd.size);
+            }
+
+            if (curProd.image_url && curProd.image_url.length > 0) {
+                var imgThumb = newRowTop.find('.imgThumb');
+                imgThumb[0].onerror = function() {
+                    imgThumb.attr('src', 'nothumb.png');
+                };
+                
+                if (curProd.image_url.substr(0,4) != 'http') {
+                    curProd.image_url = 'https://' + curProd.image_url;
+                }
+                
+                imgThumb.attr('src', curProd.image_url);
+            }
+
+            newRowTop.appendTo($('#tblProds tbody'));
+
+            var $newRowBottom = $('#protoRowBottom').clone().removeClass('protoRow');
+            $newRowBottom.show();
+
+            var extraInfo = [];
+            if (curProd.brand && curProd.brand.length > 0) {
+                extraInfo.push('Brand: ' + curProd.brand);
+            }
+            if (curProd.category && curProd.category.length > 0) {
+                extraInfo.push('Category: ' + curProd.category);
+            }
+            if (curProd.upc && curProd.upc.length > 0) {
+                extraInfo.push('UPC: ' + curProd.upc);
+            }
+            if (curProd.rsd && curProd.rsd.length > 0) {
+                extraInfo.push('Receipt Text: ' + curProd.rsd.value);
+            }
+            if (extraInfo.length > 0) {
+                $newRowBottom.find('.addlData').html(extraInfo.join('<br>'));
+            }
+
+            $newRowBottom.appendTo($('#tblProds tbody'));
+        }
+    }
+}
+
+/**********************************/
+/***** FOR MOBILE WALLET DEMO *****/
+/**********************************/
+
+function checkForBrandProducts() {
+    var searchBrand = brand.toLowerCase();
+    if (parseResults.products) {
+        for (var i in parseResults.products) {
+            var curProd = parseResults.products[i];
+            if (curProd.brand) {
+                var prodBrand = curProd.brand.toLowerCase();
+                if (searchBrand.indexOf(prodBrand) != -1 || prodBrand.indexOf(searchBrand) != -1) {
+                    addPointsToBalance(curProd);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+function showProd(matchProd) {
+    $('#imgThumb').css({width: '100%'});
+    $('#imgThumb').attr('src', matchProd.image_url);
+    $('#spanProd').html(firstName + ', thanks for purchasing <b>' + matchProd.product_name + '</b>!<br><br>You\'ve earned 10 loyalty points!');
+
+    $('#prodInfo').css({display: ''});
+
+    addPointsToBalance();
+}
+
+function addPointsToBalance() {
+    var data = {pass_serial: passSerial};
+
+    $.get({
+        url: "https://sandbox.blinkreceipt.com/mobilewallet/passupdate/addbalance.php",
+        data: data,
+        success: function(resp){
+            console.log(resp);
+            /*
+            var prodBought;
+            if (curProd.product_name && curProd.product_name.length > 0) {
+                prodBought = curProd.product_name;
+            } else {
+                prodBought = 'a ' + ucfirst(brand) + ' product';
+            }
+            alert("Hi " + firstName + "! Thanks for buying " + prodBought + ". You just earned 10 " + ucfirst(brand) + " loyalty points!");
+            */
+        },
+        error: function(xhr, status, error) {
+            console.log('addbalance failure: ' + status + ' ' + error);
+        }
+    });
+}
+
+function ucfirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
