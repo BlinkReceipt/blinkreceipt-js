@@ -105,46 +105,36 @@ window.BlinkReceipt = {
     clientUserId: '',
 
     /**
-     * Whether the camera-capture crop offset values are stated as percent, or pixels
-     *
-     * _Optional_
-     * @type {string}
-     * @default percent
-     * @example ['percent','pixels']
-     */
-    cameraCaptureCropPercentOrPixels: 'percent',
-
-    /**
-     * After the camera capture, image will be cropped out by this amount (see cameraCaptureCropPercentOrPixels); this value is the offset from the top
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the top
      *
      * _Optional_
      * @type {number}
      */
-    cameraCaptureCropValueTop: 0,
+    cameraCaptureCropPercentTop: 0,
 
     /**
-     * After the camera capture, image will be cropped out by this amount (see cameraCaptureCropPercentOrPixels); this value is the offset from the bottom
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the bottom
      *
      * _Optional_
      * @type {number}
      */
-    cameraCaptureCropValueBottom: 0,
+    cameraCaptureCropPercentBottom: 0,
 
     /**
-     * After the camera capture, image will be cropped out by this amount (see cameraCaptureCropPercentOrPixels); this value is the offset from the left
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the left
      *
      * _Optional_
      * @type {number}
      */
-    cameraCaptureCropValueLeft: 0,
+    cameraCaptureCropPercentLeft: 0,
 
     /**
-     * After the camera capture, image will be cropped out by this amount (see cameraCaptureCropPercentOrPixels); this value is the offset from the right
+     * After the camera capture, image will be cropped out by this percentage amount; this value is the offset from the right
      *
      * _Optional_
      * @type {number}
      */
-    cameraCaptureCropValueRight: 0,
+    cameraCaptureCropPercentRight: 0,
 
     /**
      * Debugging mode; more info will be shown in the console if this is set to true
@@ -662,13 +652,8 @@ window.BlinkReceipt = {
             let canvasContext = canvas.getContext('2d');
             // canvas.width = this.gumVideo.videoWidth;
             // canvas.height = this.gumVideo.videoHeight;
-            if (this.cameraCaptureCropPercentOrPixels === 'percent') {
-                canvas.width = this.gumVideo.videoWidth * (100 - (this.cameraCaptureCropValueLeft + this.cameraCaptureCropValueRight)) / 100;
-                canvas.height = this.gumVideo.videoHeight * (100 - (this.cameraCaptureCropValueTop + this.cameraCaptureCropValueBottom)) / 100;
-            } else if (this.cameraCaptureCropPercentOrPixels === 'pixels') {
-                canvas.width = this.gumVideo.videoWidth - this.cameraCaptureCropValueLeft - this.cameraCaptureCropValueRight;
-                canvas.height = this.gumVideo.videoHeight - this.cameraCaptureCropValueTop - this.cameraCaptureCropValueBottom;
-            }
+            canvas.width = this.gumVideo.videoWidth * (100 - (this.cameraCaptureCropPercentLeft + this.cameraCaptureCropPercentRight)) / 100;
+            canvas.height = this.gumVideo.videoHeight * (100 - (this.cameraCaptureCropPercentTop + this.cameraCaptureCropPercentBottom)) / 100;
 
             this.onScanInitiated();
 
@@ -680,11 +665,7 @@ window.BlinkReceipt = {
                 counter++;
 
                 //canvasContext.drawImage(this.gumVideo, 0, 0, canvas.width, canvas.height);
-                if (this.cameraCaptureCropPercentOrPixels === 'percent') {
-                    canvasContext.drawImage(this.gumVideo, (this.gumVideo.videoWidth * this.cameraCaptureCropValueLeft / 100), (this.gumVideo.videoHeight * this.cameraCaptureCropValueTop / 100), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-                } else if (this.cameraCaptureCropPercentOrPixels === 'pixels') {
-                    canvasContext.drawImage(this.gumVideo, this.cameraCaptureCropValueLeft, this.cameraCaptureCropValueTop, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-                }
+                canvasContext.drawImage(this.gumVideo, (this.gumVideo.videoWidth * this.cameraCaptureCropPercentLeft / 100), (this.gumVideo.videoHeight * this.cameraCaptureCropPercentTop / 100), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
                 let frameQuality = this.getFrameQuality(canvasContext.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
 
                 if (frameQuality > winningQuality) {

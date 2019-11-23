@@ -31,10 +31,10 @@ BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
 
 BlinkReceipt.debugMode = true;  // descriptive info in console
 
-BlinkReceipt.cameraCaptureCropValueTop = 4;
-BlinkReceipt.cameraCaptureCropValueBottom = 4;
-BlinkReceipt.cameraCaptureCropValueLeft = 7;
-BlinkReceipt.cameraCaptureCropValueRight = 7;
+BlinkReceipt.cameraCaptureCropPercentTop = 4;
+BlinkReceipt.cameraCaptureCropPercentBottom = 4;
+BlinkReceipt.cameraCaptureCropPercentLeft = 7;
+BlinkReceipt.cameraCaptureCropPercentRight = 7;
 
 let parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
 parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
@@ -179,10 +179,10 @@ BlinkReceipt.onStreamLoadedMetadata = function() {
     $('#scanFrame').css({
         position: 'absolute',
         padding: 0,
-        width: ($('#brjs-gum').width() * (100 - (BlinkReceipt.cameraCaptureCropValueLeft + BlinkReceipt.cameraCaptureCropValueRight)) / 100) + 'px',
-        height: ($('#brjs-gum').height() * (100 - (BlinkReceipt.cameraCaptureCropValueTop + BlinkReceipt.cameraCaptureCropValueBottom)) / 100) + 'px',
-        left: ($('#brjs-gum').offset().left + ($('#brjs-gum').width() * BlinkReceipt.cameraCaptureCropValueLeft / 100)) + 'px',
-        top: ($('#brjs-gum').offset().top + ($('#brjs-gum').height() * BlinkReceipt.cameraCaptureCropValueTop / 100)) + 'px',
+        width: ($('#brjs-gum').width() * (100 - (BlinkReceipt.cameraCaptureCropPercentLeft + BlinkReceipt.cameraCaptureCropPercentRight)) / 100) + 'px',
+        height: ($('#brjs-gum').height() * (100 - (BlinkReceipt.cameraCaptureCropPercentTop + BlinkReceipt.cameraCaptureCropPercentBottom)) / 100) + 'px',
+        left: ($('#brjs-gum').offset().left + ($('#brjs-gum').width() * BlinkReceipt.cameraCaptureCropPercentLeft / 100)) + 'px',
+        top: ($('#brjs-gum').offset().top + ($('#brjs-gum').height() * BlinkReceipt.cameraCaptureCropPercentTop / 100)) + 'px',
         border: '1px solid Orange',
     }).show();
 
