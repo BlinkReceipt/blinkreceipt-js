@@ -166,6 +166,8 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
 };
 
 BlinkReceipt.onStreamLoadedMetadata = function() {
+    BlinkReceipt.showDebugInfo('method', 'onStreamLoadedMetadata');
+
     $('#scanFrame').css({
         position: 'absolute',
         padding: 0,

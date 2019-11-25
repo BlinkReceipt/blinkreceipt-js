@@ -557,6 +557,7 @@ window.BlinkReceipt = {
         $('#brjs-container').show();
         $('#brjs-gum').hide();
         $('#brjs-imgStatic').hide();
+        $('#brjs-inputImage').val('');
 
         this.onClearScan();
     },
