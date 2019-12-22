@@ -61,10 +61,12 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
 
         $('#divJsonRes').css('display','');
     }
+    $('#resultsContainer').show();
 };
 
 BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
-    BlinkReceipt.showDebugInfo('method', 'onStreamCaptureError');
+    BlinkReceipt.showDebugInfo('method', 'onStreamCaptureError')
+    $('#resultsContainer').hide();
     alert("BlinkReceipt error: " + msg);
 };
 

@@ -161,6 +161,7 @@ window.BlinkReceipt = {
     sdkVersion: 'mobileweb-1.1',
     qualifiedPromoDbId: null,
     staticImages: [],
+    xhrSendImageToScannerQueue: [],
 
     showDebugInfo: function($label, $data) {
         if (this.debugMode) console.log($label+' :', $data);
@@ -602,7 +603,7 @@ window.BlinkReceipt = {
     staticImgChange: function() {
         this.showDebugInfo('method', 'staticImgChange');
 
-        let image =  document.getElementById('brjs-imgStatic');
+        let image = document.getElementById('brjs-imgStatic');
         image.style.height = ($(window).height() - 5) + 'px';
 
         image.onload = function() {
@@ -706,8 +707,14 @@ window.BlinkReceipt = {
     retakeScan: function() {
         this.showDebugInfo('method', 'retakeScan');
 
+        this.parseResults = null;
         this.showAddButton = false;
         this.curFrameIdx--;
+
+        if (this.xhrSendImageToScannerQueue.length) {
+            let xhr = this.xhrSendImageToScannerQueue.pop();
+            if (xhr.readyState != 4) xhr.abort();
+        }
 
         $('#brjs-imgStatic').hide();
         $('#brjs-gum').show()
@@ -820,6 +827,8 @@ window.BlinkReceipt = {
     },
 
     sendImageToScanner: function(dataUrl) {
+        this.showDebugInfo('method', 'sendImageToScanner');
+
         let data = new FormData();
 
         if (this.blinkReceiptId !== null) {
@@ -859,7 +868,7 @@ window.BlinkReceipt = {
 
         this.waitingForScanResults = true;
 
-        $.post({
+        let xhr = $.post({
             url: "https://" + this.apiDomain + "/api_scan" + (this.apiVersion === null ? '' : '/v' + this.apiVersion),
             data: data,
             cache: false,
@@ -897,12 +906,16 @@ window.BlinkReceipt = {
                 }
             }.bind(this),
             error: function(xhr, status, error) {
-                this.onStreamCaptureError(BlinkReceiptError.SCANFAIL, 'Failed to scan image: ' + error);
+                if (status !== 'abort') {
+                    this.onStreamCaptureError(BlinkReceiptError.SCANFAIL, 'Failed to scan image: ' + error);
+                }
                 if (status === 'timeout') {
                     this.framesTimedOut++;
                 }
             }.bind(this)
         });
+
+        this.xhrSendImageToScannerQueue.push(xhr);
     },
 
     returnResults: function() {

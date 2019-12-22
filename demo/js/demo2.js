@@ -163,6 +163,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
 
         $('#divJsonRes').css('display','');
     }
+    $('#resultsContainer').show();
 };
 
 BlinkReceipt.onStreamLoadedMetadata = function() {
@@ -186,6 +187,7 @@ BlinkReceipt.onStreamLoadedMetadata = function() {
 
 BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {
     BlinkReceipt.showDebugInfo('method', 'onStreamCaptureError');
+    $('#resultsContainer').hide();
     alert("BlinkReceipt error: " + msg);
 };
 
