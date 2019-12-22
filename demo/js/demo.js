@@ -57,6 +57,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
     if (matchProd != null) {
         showProd(matchProd);
     } else {
+        if (parseResults) $('.lnkGoBack.bottom').show(); else $('.lnkGoBack.bottom').hide();
         showProdTable(parseResults);
 
         $('#divJsonRes').css('display','');
@@ -107,7 +108,7 @@ $('#btnSelectImage').click(function() {
     BlinkReceipt.startStaticScan();
 });
 
-$('#lnkGoBack').click(function(event) {
+$('.lnkGoBack').click(function(event) {
     event.preventDefault();
 
     BlinkReceipt.clearScan();
