@@ -230,6 +230,7 @@ window.BlinkReceipt = {
 
         this.oldBgColor = $('body').css('backgroundColor');
         $('body').css('backgroundColor', 'black');
+        $('#brjs-tblButtons').css({position:'absolute', left:'0'});
     },
 
     /**
@@ -362,6 +363,7 @@ window.BlinkReceipt = {
         this.staticImages = [];
 
         $('body').css('backgroundColor', this.oldBgColor);
+        $('#brjs-tblButtons').css({position:'', left:''});  // these are set only for mobile scan, so we clear them
     },
 
     /**
@@ -372,7 +374,7 @@ window.BlinkReceipt = {
     },
 
     /**
-     *
+     * This callback is invoked after `finishClick`, and only after the scan results have returned (it will wait to invoke `onEndScan`), but before `returnResults`.
      */
     onEndScan: function() {
         this.showDebugInfo('method', 'onEndScan');
@@ -381,6 +383,19 @@ window.BlinkReceipt = {
             curStaticImg.remove();
         });
         this.staticImages = [];
+
+        $('#brjs-tblButtons').css({position:'', left:''});  // these are set only for mobile scan, so we clear them
+    },
+
+    /**
+     * This callback is invoked in "static" scanning mode once the user has selected an image but before it has loaded.
+     */
+    onstaticImgChange: function() {
+        this.showDebugInfo('method', 'onstaticImgChange');
+
+        if ($('#brjs-imgStatic').attr('src')) {
+            $('#brjs-imgStatic').clone().attr('id',null).attr('class','brjs-imgStatic-additions').css({display:'block', padding:'10px'}).insertBefore('#brjs-imgStatic');
+        }
     },
 
     /**
@@ -397,10 +412,16 @@ window.BlinkReceipt = {
 
         if ($(window).width() > 500) {
             $('#brjs-divButtonBar').css('width', $('#brjs-imgStatic').width() + 'px');
-            $('#brjs-tblButtons').css('top', 0-$('#brjs-tblButtons').height() + 'px');
         } else {
             $('#brjs-divButtonBar').css('width', '100%');
-            $('#brjs-tblButtons').css('top', ($(window).height() - $('#brjs-tblButtons').height()) + 'px');
+        }
+
+        if ($('.brjs-imgStatic-additions').length) {
+            $('html, body').animate({
+                scrollTop: $('.brjs-imgStatic-additions').last().offset().top
+            }, 0, function() { $('html, body').animate({ scrollTop: $(document).height() }, 'slow'); });
+        } else {
+            $('html, body').animate({ scrollTop: $(document).height() }, 'slow');
         }
     },
 
@@ -430,6 +451,8 @@ window.BlinkReceipt = {
         $('#brjs-snap').css('visibility', 'hidden');
         $('#brjs-finish').css('visibility', 'hidden');
         $('#brjs-btnSecondaryAction').css('visibility', 'hidden');
+        $('#brjs-imgStatic').attr('src',null);
+        $('.brjs-imgStatic-additions').remove();
     },
 
     /**
@@ -605,6 +628,8 @@ window.BlinkReceipt = {
 
         let image = document.getElementById('brjs-imgStatic');
         image.style.height = ($(window).height() - 5) + 'px';
+
+        this.onstaticImgChange();
 
         image.onload = function() {
             $('#brjs-imgStatic').css('display', 'initial');

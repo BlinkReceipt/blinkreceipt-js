@@ -55,6 +55,7 @@ BlinkReceipt.onStartMobileScan = function() {
 
     BlinkReceipt.oldBgColor = $('body').css('backgroundColor');
     $('body').css('backgroundColor', 'black');
+    $('#brjs-tblButtons').css({position:'absolute', left:'0'});
 };
 
 BlinkReceipt.onUserChoseImage = function() {
@@ -201,6 +202,7 @@ BlinkReceipt.onCancelScan = function() {
     BlinkReceipt.staticImages = [];
 
     $('body').css('backgroundColor', BlinkReceipt.oldBgColor);
+    $('#brjs-tblButtons').css({position:'', left:''});  // these are set only for mobile scan, so we clear them
     $('#initialChoice').show();
 
     $('#scanFrame').hide();

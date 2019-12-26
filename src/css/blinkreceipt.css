@@ -30,10 +30,6 @@ img#brjs-imgStatic {
 	display: none;
 }
 
-table#brjs-tblButtons {
-	position: absolute; left: 0px;
-}
-
 table#brjs-tblButtons tr {
 	width: 33%;
 }
