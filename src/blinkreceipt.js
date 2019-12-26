@@ -417,12 +417,9 @@ window.BlinkReceipt = {
         }
 
         if ($('.brjs-imgStatic-additions').length) {
-            $('html, body').animate({
-                scrollTop: $('.brjs-imgStatic-additions').last().offset().top
-            }, 0, function() { $('html, body').animate({ scrollTop: $(document).height() }, 'slow'); });
-        } else {
-            $('html, body').animate({ scrollTop: $(document).height() }, 'slow');
+            $('.brjs-imgStatic-additions').last()[0].scrollIntoView(true);
         }
+        $('html, body').animate({ scrollTop: $(document).height() }, 'slow');
     },
 
     /**
