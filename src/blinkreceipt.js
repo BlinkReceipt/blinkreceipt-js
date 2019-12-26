@@ -390,8 +390,8 @@ window.BlinkReceipt = {
     /**
      * This callback is invoked in "static" scanning mode once the user has selected an image but before it has loaded.
      */
-    onstaticImgChange: function() {
-        this.showDebugInfo('method', 'onstaticImgChange');
+    onStaticImgChange: function() {
+        this.showDebugInfo('method', 'onStaticImgChange');
 
         if ($('#brjs-imgStatic').attr('src')) {
             $('#brjs-imgStatic').clone().attr('id',null).attr('class','brjs-imgStatic-additions').css({display:'block', padding:'10px'}).insertBefore('#brjs-imgStatic');
@@ -629,7 +629,7 @@ window.BlinkReceipt = {
         let image = document.getElementById('brjs-imgStatic');
         image.style.height = ($(window).height() - 5) + 'px';
 
-        this.onstaticImgChange();
+        this.onStaticImgChange();
 
         image.onload = function() {
             $('#brjs-imgStatic').css('display', 'initial');
