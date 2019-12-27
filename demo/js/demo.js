@@ -19,7 +19,7 @@ $(document).ready(function() {
 //BlinkReceipt.apiKey = '42aa8cae13104d95b5a7972b11c7b6c6';
 BlinkReceipt.apiKey = 'a77a9513e5c78074c62f205fe94e3c34';
 
-//BlinkReceipt.debugMode = true;  // descriptive info in console
+BlinkReceipt.debugMode = true;  // descriptive info in console
 
 
 var parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
@@ -63,6 +63,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
         $('#divJsonRes').css('display','');
     }
     $('#resultsContainer').show();
+    $('body')[0].scrollIntoView(true);
 };
 
 BlinkReceipt.onStreamCaptureError = function(errorCode, msg) {

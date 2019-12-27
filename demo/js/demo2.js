@@ -166,6 +166,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
         $('#divJsonRes').css('display','');
     }
     $('#resultsContainer').show();
+    $('body').scrollIntoView[0](true);
 };
 
 BlinkReceipt.onStreamLoadedMetadata = function() {
