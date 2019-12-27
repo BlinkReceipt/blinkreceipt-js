@@ -419,7 +419,7 @@ window.BlinkReceipt = {
         if ($('.brjs-imgStatic-additions').length) {
             $('.brjs-imgStatic-additions').last()[0].scrollIntoView(true);
         }
-        $('html, body').animate({ scrollTop: $(document).height() }, 'slow');
+        $('#brjs-divButtonBar')[0].scrollIntoView({behavior: "smooth", block: "end"});
     },
 
     /**
