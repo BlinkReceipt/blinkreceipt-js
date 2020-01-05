@@ -149,8 +149,6 @@ window.BlinkReceipt = {
     cameraClickSound: null,
     showAddButton: false,
     inSelectMode: false,
-    waitingForScanResults: false,
-    finishPending: false,
     parseResults: null,
     curFrameIdx: 1,
     blinkReceiptId: null,
@@ -201,12 +199,21 @@ window.BlinkReceipt = {
         $elemDivButtonBar.append($elemTableButtons);
         $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
 
-        let $elemSpinner = $('<div id="brjs-imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
+        let $elemSpinner = $('<div id="brjs-imgSpinner" style="position:fixed; top:50%; left:50%; width:100px; height:100px; display:none;">');
         $elemSpinner.css({
             left: (($(window).width() - $elemSpinner.width()) / 2) + 'px',
             top:  (($(window).height() - $elemSpinner.height()) / 2) + 'px'
         });
         $parentContainer.append($elemSpinner);
+    },
+
+    /**
+     * This callback is invoked when the primary action button is clicked on. In mobile-scanning mode, it toggles between the "camera shutter" and "add frame" functions, while in "static" file-upload mode,
+     *  it has the "add image" function. Regardless of function, this callback is invoked when this button is clicked on.
+     */
+    onSnapClick: function() {
+        $('#brjs-finish').css('visibility', 'hidden');
+        $('#brjs-snap').css('visibility', 'hidden');
     },
 
     /**
@@ -253,7 +260,7 @@ window.BlinkReceipt = {
             });
         }
 
-        $('#brjs-finish').css('visibility', 'hidden');
+        $('#brjs-snap').css('visibility', 'visible');
         $('#brjs-snap').removeClass('brjs-plusButton').addClass('brjs-cameraButton');
         $('#brjs-btnSecondaryAction').text('Cancel');
     },
@@ -265,7 +272,9 @@ window.BlinkReceipt = {
         this.showDebugInfo('method', 'onScanInitiated');
 
         this.cameraClickSound.play();
+
         $('#brjs-imgSpinner').show();
+        $('#brjs-btnSecondaryAction').css('visibility', 'hidden');
     },
 
     /**
@@ -276,8 +285,6 @@ window.BlinkReceipt = {
      */
     onScanAcquired: function(winningDataUrl) {
         this.showDebugInfo('method', 'onScanAcquired');
-
-        $('#brjs-imgSpinner').hide();
 
         let scaleW = $('#brjs-gum').width() / this.gumVideo.videoWidth;
         let scaleH = $('#brjs-gum').height() / this.gumVideo.videoHeight;
@@ -294,8 +301,6 @@ window.BlinkReceipt = {
         $imgStatic.on('load', function() {
             $imgStatic.show();
             $('#brjs-gum').hide();
-            $('#brjs-finish').css('visibility', 'visible');
-            $('#brjs-btnSecondaryAction').css('visibility', 'visible');
             $('#brjs-btnSecondaryAction').text('Retake');
             $('#brjs-snap').removeClass('brjs-cameraButton').addClass('brjs-plusButton');
         });
@@ -306,13 +311,25 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked when the #brjs-finish button is clicked on but there is still a product-info lookup in progress. The product-info lookup is started right after onScanAcquired() (for mobile scan),
-     *  or onUserChoseImage() (for "static" image selection).
+     * This callback is invoked after the response returns from the scanning service, requested on the image scan(s). It is always invoked regardless of success or error.
      */
-    onWaitingForScanResults: function() {
-        this.showDebugInfo('method', 'onWaitingForScanResults');
+    onSendImageToScannerResponded() {
+        let requestsStillPending = false;
+        this.xhrSendImageToScannerQueue.forEach(function(xhr, i) {
+            if (xhr.readyState != 4) requestsStillPending = true;
+        });
 
-        $('#brjs-imgSpinner').show();
+        if (requestsStillPending) {
+            $('#brjs-imgSpinner').show();
+            $('#brjs-finish').css('visibility', 'hidden');
+            $('#brjs-snap').css('visibility', 'hidden');
+            $('#brjs-btnSecondaryAction').css('visibility', 'hidden');
+        } else {
+            $('#brjs-imgSpinner').hide();
+            $('#brjs-finish').css('visibility', 'visible');
+            $('#brjs-snap').css('visibility', 'visible');
+            $('#brjs-btnSecondaryAction').css('visibility', 'visible');
+        }
     },
 
     /**
@@ -405,10 +422,9 @@ window.BlinkReceipt = {
     onUserChoseImage: function() {
         if (typeof this.showDebugInfo === 'function') this.showDebugInfo('method', 'onUserChoseImage');     // method might not exist due to "parentStub" caller
 
-        $('#brjs-finish').css('visibility', 'visible');
-        $('#brjs-snap').css('visibility', 'visible');
-        $('#brjs-btnSecondaryAction').css('visibility', 'visible');
+        $('#brjs-btnSecondaryAction').css('visibility', 'hidden');
         $('#brjs-btnSecondaryAction').text('Cancel');
+        $('#brjs-imgSpinner').show();
 
         if ($(window).width() > 500) {
             $('#brjs-divButtonBar').css('width', $('#brjs-imgStatic').width() + 'px');
@@ -485,7 +501,6 @@ window.BlinkReceipt = {
 
         $('#brjs-tblButtons').css('top', ($(window).height() - $('#brjs-tblButtons').height()) + 'px');
         $('#brjs-snap').css('visibility', 'visible');
-        $('#brjs-btnSecondaryAction').css('visibility', 'visible');
         $('#brjs-btnSecondaryAction').text('Cancel');
     },
 
@@ -569,10 +584,8 @@ window.BlinkReceipt = {
         this.parseResults = null;
         this.curFrameIdx = 1;
         this.blinkReceiptId = null;
-        this.waitingForScanResults = false;
         this.showAddButton = false;
         this.inSelectMode = false;
-        this.finishPending = false;
         this.staticImages = [];
 
         $('#brjs-container').show();
@@ -632,7 +645,7 @@ window.BlinkReceipt = {
             $('#brjs-imgStatic').css('display', 'initial');
             $('#brjs-gum').hide();
 
-            this.onUserChoseImage();
+            setTimeout(function() { this.onUserChoseImage(); }.bind(this), 333);
 
             let canvas = document.createElement('canvas');
             let canvasContext = canvas.getContext('2d');
@@ -656,6 +669,8 @@ window.BlinkReceipt = {
 
     snapClick: function() {
         this.showDebugInfo('method', 'snapClick');
+
+        this.onSnapClick();
 
         if (this.inSelectMode) {
             $('#brjs-inputImage').click();
@@ -715,12 +730,6 @@ window.BlinkReceipt = {
             window.stream.getTracks().forEach(function(curTrack) {
                 curTrack.stop();
             });
-        }
-
-        if (this.waitingForScanResults) {
-            this.finishPending = true;
-            this.onWaitingForScanResults();
-            return;
         }
 
         this.endScan();
@@ -888,8 +897,7 @@ window.BlinkReceipt = {
             }
         }
 
-        this.waitingForScanResults = true;
-
+        let _this = this;
         let xhr = $.post({
             url: "https://" + this.apiDomain + "/api_scan" + (this.apiVersion === null ? '' : '/v' + this.apiVersion),
             data: data,
@@ -919,13 +927,6 @@ window.BlinkReceipt = {
                         this.blinkReceiptId = this.parseResults.blink_receipt_id;
                     }
                 }
-
-                this.waitingForScanResults = false;
-
-                if (this.finishPending) {
-                    $('#brjs-imgSpinner').hide();
-                    this.endScan();
-                }
             }.bind(this),
             error: function(xhr, status, error) {
                 if (status !== 'abort') {
@@ -935,6 +936,8 @@ window.BlinkReceipt = {
                     this.framesTimedOut++;
                 }
             }.bind(this)
+        }).always(function() {
+            _this.onSendImageToScannerResponded();
         });
 
         this.xhrSendImageToScannerQueue.push(xhr);

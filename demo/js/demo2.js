@@ -26,8 +26,6 @@ BlinkReceipt.cameraCaptureCropPercentBottom = 4;
 BlinkReceipt.cameraCaptureCropPercentLeft = 7;
 BlinkReceipt.cameraCaptureCropPercentRight = 7;
 
-var parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
-parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
 
 BlinkReceipt.onCreateUI = function($parentContainer, $elemCenter) {
     BlinkReceipt.showDebugInfo('method', 'onCreateUI');
@@ -42,7 +40,7 @@ BlinkReceipt.onCreateUI = function($parentContainer, $elemCenter) {
     $elemDivButtonBar.append($elemTableButtons);
     $elemCenter.append($elemDivButtonBar);  // $elemCenter gets appended to $parentContainer internally after this
 
-    var $elemSpinner = $('<div id="brjs-imgSpinner" style="position: absolute; width: 100px; height: 100px; display: none;">');
+    var $elemSpinner = $('<div id="brjs-imgSpinner" style="position:fixed; top:50%; left:50%; width:100px; height:100px; display:none;">');
     $elemSpinner.css({
         left: (($(window).width() - $elemSpinner.width()) / 2) + 'px',
         top:  (($(window).height() - $elemSpinner.height()) / 2) + 'px'
@@ -58,6 +56,10 @@ BlinkReceipt.onStartMobileScan = function() {
     $('#brjs-tblButtons').css({position:'absolute', left:'0'});
 };
 
+
+var parentStub = new Object();  // so that we can copy some of the original methods to be called later in our custom callbacks
+parentStub['onUserChoseImage'] = BlinkReceipt['onUserChoseImage'];
+
 BlinkReceipt.onUserChoseImage = function() {
     BlinkReceipt.showDebugInfo('method', 'onUserChoseImage');
 
@@ -70,7 +72,6 @@ BlinkReceipt.onScanAcquired = function(winningDataUrl) {
     BlinkReceipt.showDebugInfo('method', 'onScanAcquired');
 
     $('#scanFrame').hide();
-    $('#brjs-imgSpinner').hide();
 
     var scaleW = $('#brjs-gum').width() / this.gumVideo.videoWidth;
     var scaleH = $('#brjs-gum').height() / this.gumVideo.videoHeight;
@@ -87,8 +88,6 @@ BlinkReceipt.onScanAcquired = function(winningDataUrl) {
     $imgStatic.on('load', function() {
         $imgStatic.show();
         $('#brjs-gum').hide();
-        $('#brjs-finish').css('visibility', 'visible');
-        $('#brjs-btnSecondaryAction').css('visibility', 'visible');
         $('#brjs-btnSecondaryAction').text('Retake');
         $('#brjs-snap').removeClass('brjs-cameraButton').addClass('brjs-plusButton');
     });
@@ -134,7 +133,7 @@ BlinkReceipt.onAddScanButtonClicked = function() {
     }
 
     $('#scanFrame').show();
-    $('#brjs-finish').css('visibility', 'hidden');
+    $('#brjs-snap').css('visibility', 'visible');
     $('#brjs-snap').removeClass('brjs-plusButton').addClass('brjs-cameraButton');
     $('#brjs-btnSecondaryAction').text('Cancel');
 };
@@ -166,7 +165,7 @@ BlinkReceipt.onFinished = function(parseResults, rawText, hash) {
         $('#divJsonRes').css('display','');
     }
     $('#resultsContainer').show();
-    $('body').scrollIntoView[0](true);
+    $('body')[0].scrollIntoView(true);
 };
 
 BlinkReceipt.onStreamLoadedMetadata = function() {
@@ -184,7 +183,6 @@ BlinkReceipt.onStreamLoadedMetadata = function() {
 
     $('#brjs-tblButtons').css('top', ($(window).height() - $('#brjs-tblButtons').height()) + 'px');
     $('#brjs-snap').css('visibility', 'visible');
-    $('#brjs-btnSecondaryAction').css('visibility', 'visible');
     $('#brjs-btnSecondaryAction').text('Cancel');
 };
 
