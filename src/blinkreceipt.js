@@ -311,10 +311,10 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked after the response returns from the scanning service, requested on the image scan(s). It is always invoked regardless of success or error.
+     * This callback is invoked after a response returns from the scanning service, requested for scanned image(s). It is always invoked regardless of success or error.
      */
     onSendImageToScannerResponded() {
-        if (this.scannerRequestsStillPending()) {
+        if (this.anyScannerRequestsStillPending()) {
             $('#brjs-imgSpinner').show();
             $('#brjs-finish').css('visibility', 'hidden');
             $('#brjs-snap').css('visibility', 'hidden');
@@ -328,15 +328,15 @@ window.BlinkReceipt = {
     },
 
     /**
-     * Checks if any requests to the scanning service are still pending.
+     * Checks if any requests to the scanning service are still pending. Currently though, only one request at a time is expected to be performed.
      * @returns {boolean}
      */
-    scannerRequestsStillPending() {
-        let requestsStillPending = false;
+    anyScannerRequestsStillPending() {
+        let anyRequestsStillPending = false;
         this.xhrSendImageToScannerQueue.forEach(function(xhr, i) {
-            if (xhr.readyState != 4) requestsStillPending = true;
+            if (xhr.readyState != 4) anyRequestsStillPending = true;
         });
-        return requestsStillPending;
+        return anyRequestsStillPending;
     },
 
     /**
