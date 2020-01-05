@@ -311,7 +311,7 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked after a response returns from the scanning service, requested for scanned image(s). It is always invoked regardless of success or error.
+     * This callback is invoked after a response returns from the scanning service, requested for captured/selected image(s). It is always invoked regardless of success or error.
      */
     onSendImageToScannerResponded() {
         if (this.anyScannerRequestsStillPending()) {
@@ -328,7 +328,8 @@ window.BlinkReceipt = {
     },
 
     /**
-     * Checks if any requests to the scanning service are still pending. Currently though, only one request at a time is expected to be performed.
+     * Checks if any requests to the scanning service are still pending. Currently though, only one request at a time is expected to be performed,
+     *  especially because the first request generates the unique Blink Receipt ID needed for subsequent scans belonging to the same receipt.
      * @returns {boolean}
      */
     anyScannerRequestsStillPending() {
