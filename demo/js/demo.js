@@ -13,6 +13,10 @@ $(document).ready(function() {
     }
 
     $('#initialChoice').css('top', ($(window).height() - $('#initialChoice').height()) / 2 + 'px');
+
+    window.addEventListener('resize', function () {
+        $('#brjs-imgSpinner').css({top:'50%', left:'50%'});
+    })
 });
 
 //BlinkReceipt.apiKey = '9b21415cd442f62123b6f94a10942a88';
