@@ -298,7 +298,6 @@ window.BlinkReceipt = {
 
         $imgStatic.on('load', function() {
             $imgStatic.show();
-            $('#brjs-gum').hide();
             $('#brjs-btnSecondaryAction').text('Retake');
             $('#brjs-snap').removeClass('brjs-cameraButton').addClass('brjs-plusButton');
         });
@@ -717,6 +716,7 @@ window.BlinkReceipt = {
 
                 if (counter == 5) {
                     clearInterval(timer);
+                    $('#brjs-gum').hide();
                     this.onScanAcquired(winningDataUrl);
                     this.sendImageToScanner(winningDataUrl);
                 }

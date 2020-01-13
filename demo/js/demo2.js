@@ -91,7 +91,6 @@ BlinkReceipt.onScanAcquired = function(winningDataUrl) {
 
     $imgStatic.on('load', function() {
         $imgStatic.show();
-        $('#brjs-gum').hide();
         $('#brjs-btnSecondaryAction').text('Retake');
         $('#brjs-snap').removeClass('brjs-cameraButton').addClass('brjs-plusButton');
     });
