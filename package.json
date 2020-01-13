@@ -8,7 +8,7 @@
   "license": "",
   "scripts": {
     "build": "webpack",
-    "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs"
+    "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs -u docs/tutorials"
   },
   "dependencies": {},
   "devDependencies": {
