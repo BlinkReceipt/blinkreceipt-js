@@ -166,7 +166,7 @@ window.BlinkReceipt = {
     },
 
     /**
-     * This callback is invoked during creation of UI elements. You may override this in your instance to customize these specific elements, provided you preserve the `id` attribute values, because event bindings will depend on them.
+     * This callback is invoked during creation of UI elements. You may override this in your instance to customize these specific elements, provided you preserve the `id` attribute values, because internal event bindings will depend on them.
      *
      * @param $parentContainer {object} the JQuery element that is the parent container for all other BlinkReceipt-JS elements.
      * @param $elemCenter {object} a JQuery mid-level element that is horizontally centered and will contain the captured image, as well as the action buttons.

@@ -31,7 +31,7 @@ Internal |
 
 Callback | Description
 --- | ---
-onCreateUI | This callback is invoked during creation of UI elements. You may override this in your instance to customize these specific elements, provided you preserve the `id` attribute values, because event bindings will depend on them.
+onCreateUI | This callback is invoked during creation of UI elements. You may override this in your instance to customize these specific elements, provided you preserve the `id` attribute values, because internal event bindings will depend on them.
 onSnapClick | This callback is invoked when the primary action button is clicked on. In mobile-scanning mode, it toggles between the "camera shutter" and "add frame" functions, while in "static" file-upload mode, it has the "add image" function. Regardless of function, this callback is invoked when this button is clicked on.
 onStartStaticScan | This callback is invoked after a static scan is performed (select image).
 onStartMobileScan | This callback is invoked after the mobile scan is performed.
