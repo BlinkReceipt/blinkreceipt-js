@@ -56,6 +56,15 @@ The application expects a top-level DOM element named `#brjs-container` to conta
 
 ## How To Override Callbacks
 
+You may override callbacks by redeclaring and redefining them, as shown in the `/demo` directory. Observe the Javascript "override" files `demo.js` and `demo2.js`, which are loaded after the main `/dist/blinkreceipt.js` file. This main/original class file creates the `window.BlinkReceipt` object which is the singleton instance we use for all operations.
+
+Any occurences of the keyword `this` in the methods of the main/original class file, need to be renamed to `BlinkReceipt` in the override file (again, see the demo JS files for examples) since we are referring to the window singleton instance.
+
+If all you are doing is adding to a method instead of modifying it, and don't want to repeat all the code, then a shortcut is to clone the method before it is overridden/customized, and then call the cloned method within the overriding method. You can see this in action by searching on the `parentStub` keyword.
+
+To safely support all browsers, use the keyword `var` instead of `let` in the override JS files, even though the main/original file uses the `let` keyword. This is because the "compiled" version at `/dist/blinkreceipt.js` is transpiled down to use `var` anyway, whereas the override JS files are not transpiled.
+
+
 ## Second Demo To Showcase Camera-Crop Offsets
 
 ## Migrating From Older Versions (< 2.0)
