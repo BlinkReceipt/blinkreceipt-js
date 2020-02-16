@@ -64,7 +64,10 @@ If all you are doing is adding to a method instead of modifying it, and don't wa
 
 To safely support all browsers, use the keyword `var` instead of `let` in the override JS files, even though the main/original file uses the `let` keyword. This is because the "compiled" version at `/dist/blinkreceipt.js` is transpiled down to use `var` anyway, whereas the override JS files are not transpiled.
 
-
 ## Second Demo To Showcase Camera-Crop Offsets
 
+You might want to crop only a portion of the captured video area, for example to provide a targeting frame in your UI whereby anything outside of it is cropped out. The implementation for this is shown in `demo2.js` and the class attributes that enable this are prefixed with `cameraCaptureCropPercent`. In particular, notice how the custom `#scanFrame` element utilizes the `BlinkReceipt.cameraCaptureCropPercent` attributes. 
+
 ## Migrating From Older Versions (< 2.0)
+
+If you are updating your linked `/dist/blinkreceipt.js` file from a version earlier than 2.0, please be aware that there might be minor breaking changes due to some changes to existing callbacks.
