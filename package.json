@@ -16,7 +16,7 @@
     "@babel/preset-env": "^7.6.3",
     "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^5.0.4",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jsdoc": "^3.6.3",
     "path": "^0.12.7",
     "webpack": "^4.41.0",
