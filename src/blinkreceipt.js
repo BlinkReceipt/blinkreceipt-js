@@ -60,7 +60,7 @@ window.BlinkReceipt = {
      * _Optional_
      * @type {integer}
      */
-    apiVersion: null,
+    apiVersion: 14,
 
     /**
      * Set to `true` to turn on promotion validation (requires appropriate permission on your API key)

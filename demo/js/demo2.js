@@ -212,7 +212,7 @@ BlinkReceipt.onCancelScan = function() {
 
 
 //Only set these properties if you want to force the sandbox environment and/or a specific version of the API
-BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
+BlinkReceipt.apiDomain = 'scan.blinkreceipt.com';
 // BlinkReceipt.apiDomain = 'scan-ph.blinkreceipt.com';
 //BlinkReceipt.apiVersion = 9;
 

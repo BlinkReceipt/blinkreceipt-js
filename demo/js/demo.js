@@ -91,7 +91,7 @@ BlinkReceipt.onCancelScan = function() {
 
 
 //Only set these properties if you want to force the sandbox environment and/or a specific version of the API
-BlinkReceipt.apiDomain = 'sandbox.blinkreceipt.com';
+BlinkReceipt.apiDomain = 'scan.blinkreceipt.com';
 // BlinkReceipt.apiDomain = 'scan-ph.blinkreceipt.com';
 //BlinkReceipt.apiVersion = 9;
 
@@ -322,7 +322,7 @@ function addPointsToBalance() {
     var data = {pass_serial: passSerial};
 
     $.get({
-        url: "https://sandbox.blinkreceipt.com/mobilewallet/passupdate/addbalance.php",
+        url: "sandbox.blinkreceipt.com/mobilewallet/passupdate/addbalance.php",
         data: data,
         success: function(resp){
             console.log(resp);
