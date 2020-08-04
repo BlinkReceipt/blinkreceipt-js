@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2020 The eReceipt project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+  <meta charset="utf-8">
+  <meta name="description" content="eReceipt Code Samples">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="Client-side eReceipt Code Samples">
+  <meta itemprop="name" content="eReceipt Code Samples">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#ffffff">
+
+  <base target="_blank">
+
+  <title>BlinkReceipt eReceipt Web Demo</title>
+
+  <link rel="icon" href="data:;base64,iVBORwOKGO=" /> <!-- blank -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+
+ 
+  <!-- NOTE : JQuery does not need to be added to use blinkreceipt.js; it is already bundled in the minified version in /dist and won't interfere with any other version(s) on your page.
+              However for this demo, it is needed by the other .js files. Your implementation may not use JQuery and thus not need it added like this below.  -->
+  <script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/moment.min.js"></script>
+
+  <!-- GMAIL -->
+  <script async defer src="https://apis.google.com/js/api.js"></script>
+
+  <!-- MSAL -->
+  <script src="https://cdn.jsdelivr.net/npm/bluebird@3.7.2/js/browser/bluebird.min.js"></script>
+  <script type="text/javascript" src="https://alcdn.msftauth.net/lib/1.3.3/js/msal.min.js" integrity="sha384-36I7QTFSxEfBGkSBpZ3zdySjtmAchWxrUHUFcLzDJVLe4dGnEwnOmp0vRfA1lek+" crossorigin="anonymous"></script>
+   
+  <!-- Graph SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/microsoft-graph-client/lib/graph-js-sdk.js"></script>
+ 
+</head>
+
+<body>
+  <form id="GetOrders" action="" method="post">
+    <p> Provider:
+        <select name="action" id="provider_id" style="width: 300px;margin-left:22px">
+            <option value='GMAIL' selected>Gmail</option>
+            <option value='OUTLOOK'>MS Outlook</option>
+        </select>
+    </p>
+    <p> Action:
+        <select name="action" id="alpAction" style="width: 300px;margin-left:22px">
+            <option value="GetOrders">Get Orders</option>
+        </select>
+    </p>
+    <p>Cut Off Days: <input type="text" id="cutOffDays" name="cutOffDays" style="width: 300px" value="100"/></p>
+    <p><input type="submit" name="btn" style="width:100px;" /></p>
+  </form>
+
+  <br />
+  <p>Result:</p><br />
+  <div id="api_result" style="width:400px"></div>
+
+
+  <!-- include adapter for srcObject shim -->
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+
+  <link rel="stylesheet" href="../dist/css/blinkreceipt.css">
+  <script src="../dist/blinkreceipt.js"></script>
+ 
+  <script>
+    // cache-buster, appends new time each reload; OK to do this since it's a single-page app that doesn't really reload
+    (function() {
+      var h, a, f;
+
+      a = document.getElementsByTagName('script');
+      for (h = 0; h < a.length; h++) {
+        f = a[h];
+        if (f.src && !f.src.startsWith('https://', 0)) {
+          var g = f.src.replace(/(&|\?)v=\d+/, '');
+          f.src = g + (g.match(/\?/) ? '&' : '?');
+          f.src += 'v=' + (new Date().valueOf());
+        }
+      }
+
+      a = document.getElementsByTagName('link');
+      for (h = 0; h < a.length; h++) {
+        f = a[h];
+        if (f.href && !f.href.startsWith('https://', 0)) {
+          var g = f.href.replace(/(&|\?)v=\d+/, '');
+          f.href = g + (g.match(/\?/) ? '&' : '?');
+          f.href += 'v=' + (new Date().valueOf());
+        }
+      }
+    })()
+  </script>
+
+  <script>
+
+    document.forms['GetOrders'].addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      let cutOffDays = parseInt(document.getElementById('cutOffDays').value);
+      let providerKey = document.getElementById('provider_id').value;
+      let eReceipts = window.BlinkReceipt.eReceipts();
+      let params = {};
+      if (providerKey == eReceipts.PROVIDERS.GMAIL) {
+          eReceipts.loadProviderConfiguration(providerKey, {
+              apiKey: "AIzaSyCJUJhki1Kpa3U_pCZd4trkrNZxqp_-4Lo",
+              clientId: "660484303412-o01fmtp6h80cd433c32e04rtblmb2scf.apps.googleusercontent.com"
+          });
+      } else if (providerKey == eReceipts.PROVIDERS.OUTLOOK) {
+          eReceipts.loadProviderConfiguration(providerKey, {
+              auth: {
+                  clientId: '25a5fa3c-5a7e-4381-acbe-c086286c8b58',
+                  redirectUri: 'http://localhost:8080'
+              },
+              cache: {
+                  cacheLocation: "sessionStorage",
+                  storeAuthStateInCookie: false,
+                  forceRefresh: false
+              }
+          });
+      } else {
+          params = {
+              username: document.getElementById('username').value,
+              password: document.getElementById('password').value,
+              provider: providerKey,
+              cutOffDays: cutOffDays
+          };
+      }
+      eReceipts.fetchReceipts(providerKey, cutOffDays, params).then(response => {
+          document.getElementById('api_result').innerHTML = JSON.stringify(response);
+      }).catch(error => {
+          document.getElementById('api_result').innerHTML = JSON.stringify(error);
+      });
+                
+    });
+
+  </script>
+
+</body>
+</html>

@@ -10,9 +10,12 @@
     "build": "webpack",
     "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs -u docs/tutorials"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@babel/runtime": "^7.11.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.6.3",
+    "@babel/plugin-transform-runtime": "^7.11.0",
     "@babel/preset-env": "^7.6.3",
     "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^5.0.4",

@@ -1085,6 +1085,362 @@ window.BlinkReceipt = {
     }
 };
 
+// -----------------------------------------
+// --------        eReceipts        --------
+// -----------------------------------------
+window.BlinkReceipt.eReceipts = function() {
+
+    // TODO: consider removing this and only use the params parameter when fetching eReceipts
+    let _providerConfigs = {};
+    let _merchantSenders = [];
+
+    let _urlHeaders = {
+        'Accept': 'application/vnd.windfall+json;version=1',
+        'Accept-Language': 'en;q=1',
+        'Api-Token': 'Km4xo61uLoB66o94RuoH',
+        'User-Agent': 'WindfallSDK/1.0',
+        'uid': 334548662
+    };
+
+    // -----------------------------------------
+    // --------          Public         --------
+    // -----------------------------------------
+    /**
+     * A list with all supported email providers 
+     */
+    const PROVIDERS = {
+        'GMAIL':      'GMAIL',
+        // 'OUTLOOK':    'OUTLOOK',
+        // 'YAHOO':      'YAHOO',
+        // 'AOL':        'AOL',
+        // 'GMAIL_IMAP': 'GMAIL_IMAP'
+    };
+
+    /**
+     * A list with all supported email providers 
+     * 
+     * @param provider {string} A supported provider from `window.BlinkReceipt.eReceipts.PROVIDERS`
+     * @param config {object} An object that has all parameters needed so we can autheticate with email provider
+     *
+     */
+    function loadProviderConfiguration(provider, config) {
+        _providerConfigs[provider] = config;
+    };
+
+    /**
+     * Use this method to find eReceipts for a provider 
+     * 
+     * @param provider   {string}  A supported provider ffromorm `window.BlinkReceipt.eReceipts.PROVIDERS`
+     * @param cutOffDays {integer} Number of days in the past to search orders in
+     * @param params     {object}  Pass all necessary configration what provider may need when autheticating 
+     *
+     */
+    function fetchReceipts(provider, cutOffDays, params) {
+        return new Promise(async (resolve, reject) => {
+            loadMerchants(() => {
+                if (provider == PROVIDERS.GMAIL) {
+                    signInGmail(cutOffDays, params).then(response => { 
+                        resolve(response); 
+                    }).catch(error => { 
+                        reject(error); 
+                    });
+                }
+            });
+        });
+    };
+
+    // -----------------------------------------
+    // --------          GMAIL          --------
+    // -----------------------------------------
+    function signInGmail(cutOffDays) {
+        return new Promise(async (resolve, reject) => {
+            var config = _providerConfigs[PROVIDERS.GMAIL];
+            config.discoveryDocs = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest"];
+            config.scope = 'https://www.googleapis.com/auth/gmail.readonly';
+
+            if (typeof config.clientId === 'undefined') {
+                reject('Auth error: `clientId` missing');
+                return;
+            }
+            if (typeof config.apiKey === 'undefined') {
+                reject('Auth error: `apiKey` missing');
+                return;
+            }
+
+            gapi.load('client:auth2', function() {
+                gapi.client.init(config).then(function () {
+                    if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                        fetchGmailMessages(cutOffDays).then(response => {
+                            resolve(response);
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    } else {
+                        // Listen for sign-in state changes.
+                        gapi.auth2.getAuthInstance().isSignedIn.listen(() => {
+                            fetchGmailMessages(cutOffDays).then(response => {
+                                resolve(response);
+                            }).catch(error => {
+                                reject(error);
+                            });
+                        });
+                        // Authenticate
+                        gapi.auth2.getAuthInstance().signIn();
+                    }
+                }, function(error) {
+                    reject(error);
+                });
+            });
+        });    
+    }
+
+    function fetchGmailMessages(cutOffDays) {
+        let cutOffDateStr = cutOffDaysToDateStr(cutOffDays, '/')
+        return new Promise(async (resolve, reject) => { 
+
+            let batch = [];
+            let batches = [];
+            for (let merchant of _merchantSenders) {
+                batch.push(merchant);
+                if (batch.length == 100) {
+                    batches.push(batch);
+                    batch = [];
+                }
+            }
+            if (batch.length > 0) {
+                batches.push(batch);
+            }
+
+            let queries = [];
+            for (let b of batches) {
+                queries.push("from:" + b.join(' OR '))
+            }
+
+            if (queries.length == 0) {
+                resolve([]);
+            }
+            let query = ' after:' + cutOffDateStr;
+
+            function getPageOfMessages(request, result) {
+                request.execute(function(resp) {
+                    result = result.concat(resp.messages || []);
+                    var nextPageToken = resp.nextPageToken;
+                    if (nextPageToken) {
+                        request = gapi.client.gmail.users.messages.list({
+                            'userId': 'me',
+                            'pageToken': nextPageToken,
+                            'q': queries[0] + ' after:' + cutOffDateStr
+                        });
+                        getPageOfMessages(request, result);
+                    } else {
+                        queries.shift();
+                        if (queries.length > 0) {
+                            getFirstPageOfMessages();
+                        } else {
+                            var messagesIdList = {};
+                            result.forEach(msg => {
+                                messagesIdList[msg.id]='';
+                            });
+                            if (Object.keys(messagesIdList).length == 0) {
+                                resolve([]);
+                            } else {
+                                fetchFullGmailMessageDetails(messagesIdList, [], (brOrders) => {
+                                    transcribeOrders(brOrders, function(transcribed) {
+                                        resolve(transcribed);
+                                    });
+                                });
+                            }
+                        }
+                    }
+                });
+            };
+
+            function getFirstPageOfMessages() {
+                var initialRequest = gapi.client.gmail.users.messages.list({
+                    'userId': 'me',
+                    // 'q': ' after:' + cutOffDateStr
+                    'q': queries[0] + ' after:' + cutOffDateStr
+                });
+                getPageOfMessages(initialRequest, []);
+            }
+            getFirstPageOfMessages();
+            
+        });
+    };
+
+    function fetchGmailMessageWithId(messageId, callback) {
+        var request = gapi.client.gmail.users.messages.get({
+            'userId': 'me',
+            'id': messageId
+        });
+        request.execute((data) => {
+            let blinkMsg = gmailToBlinkMessage(data);
+            callback(blinkMsg);
+        });
+    };
+
+    function fetchFullGmailMessageDetails(messageIdsList, fullMessagesList, callback) {
+        if (Object.keys(messageIdsList).length == 0) {
+            callback(fullMessagesList);
+            return;
+        }
+        fetchGmailMessageWithId(Object.keys(messageIdsList)[0], function(details) {
+            fullMessagesList.push(details);
+            delete messageIdsList[details.message_id];
+            if (Object.keys(messageIdsList).length == 0) {
+                callback(fullMessagesList);
+            } else {
+                fetchFullGmailMessageDetails(messageIdsList, fullMessagesList, callback)
+            }
+        });
+    }
+
+    function gmailToBlinkMessage(data) {
+        let blinkMsg = {
+            'provider': 'gmail',
+            'message_id': data.id,
+            'blink_receipt_id': window.BlinkReceipt.uuidv4()
+        };
+        let payload = data.payload || {};
+
+        let headers = payload.headers || [];
+        for (let header of headers) {
+            if (header.name === 'Date') {
+                let date = new Date(header.value);
+                if(!isNaN(date.getTime())) {
+                    blinkMsg.date = header.value;
+                }
+            }
+            if (header.name === 'From') {
+                blinkMsg.sender = header.value;
+            }
+        }
+
+        if (payload.mimeType == "text/html") {
+            let body = payload.body || {};
+            let base64 = body.data || '';
+            let decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+            blinkMsg.html_body = decoded;
+        } else {
+            var parts = payload.parts || [];
+            for (let part of parts) {
+                if (part.mimeType == "text/html") {
+                    let body = part.body || {};
+                    let base64 = part.body.data || '';
+                    let decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+                    blinkMsg.html_body = decoded;
+                    break;
+                }
+            }
+        }
+        return blinkMsg;
+    }
+
+    function cutOffDaysToDateStr(cutOffDays, separator) {
+        let cutOffDate = new Date();
+        cutOffDate.setDate(cutOffDate.getDate()-cutOffDays);
+        let dd = cutOffDate.getDate();
+        let mm = cutOffDate.getMonth() + 1; // getMonth() is zero-based
+        let cutOffDateStr = cutOffDate.getFullYear() + separator + (mm>9 ? '' : '0') + mm + separator + (dd>9 ? '' : '0') + dd;
+        return cutOffDateStr;
+    }
+
+    function loadMerchants(callback) {
+        let data = sessionStorage.getItem('br_ereceipt_merchants');
+        if (data !== null) {
+            _merchantSenders = JSON.parse(data);
+            callback();
+        } else {
+            _merchantSenders = [
+                'yourfriends@peapod.com', 
+                'orders@oe.target.com', 
+                'orders@jet.com', 
+                'transactions@samsclub.com', 
+                'orders@instacart.com',
+                'help@walmart.com'
+            ];
+            sessionStorage.setItem('br_ereceipt_merchants', JSON.stringify(_merchantSenders));
+            
+            fetch('https://br-licensing-stag.windfall.me/api/emails/supported_emails', {'headers': _urlHeaders}).then(response => {
+                response.json().then(data => {
+                    let emails = [];
+                    for (let d of data) {
+                        let email = d.email;
+                        if (email.startsWith('orders+') && email.endsWith('instacart.com')) {
+                            continue;
+                        }
+                        if (email === 'orders@instacart.com') {
+                            emails.push('orders*@instacart.com');
+                            continue;
+                        }
+                        emails.push(email); 
+                    }
+                    _merchantSenders = emails;
+                    sessionStorage.setItem('br_ereceipt_merchants', JSON.stringify(_merchantSenders));
+                    callback();
+                }).catch(error => {
+                    callback();
+                });
+            });
+        }
+    }
+
+    function transcribeOrders(orders, callback) {
+        if (orders.length == 0) {
+            callback([]);
+            return;
+        }
+
+        let payload = {
+            save_ereceipt: true
+        };
+        var i;
+        for (i = 0; i < orders.length; i++) { 
+            let o = orders[i];
+            let keyBase = "ereceipt[" + i + "]";
+            
+            payload[keyBase + "[sender]"] = o.sender;                        
+            payload[keyBase + "[html_body]"] = o.html_body;        
+            payload[keyBase + "[blink_receipt_id]"] = o.blink_receipt_id;
+
+            let date = o.date;
+            if (typeof date !== 'undefined') {
+                payload[keyBase + "[email_date]"] = moment(date).format('MMM DD, yyyy');            
+                payload[keyBase + "[email_time]"] = moment(date).format('hh:mm:ss A');  
+            }
+            payload[keyBase + "[email_id]"] = o.message_id;
+            payload[keyBase + "[email_provider]"] = o.provider;        
+         
+            // DEBUG
+            payload[keyBase + "[debugging]"] = "do_not_validate_header=true;do_not_validate_pvp=true;eml_debugging=false";
+
+        }
+        const h = _urlHeaders;
+        h['Content-Type'] = 'application/x-www-form-urlencoded';
+        let params = {
+            'method': 'post',
+            'headers': h,    
+            'body': new URLSearchParams(payload).toString()
+        };
+        fetch('https://br-licensing-stag.windfall.me/api/emails/scrape_e_receipt', params).then(response => {
+            response.json().then(data => {
+                console.log(data);
+                callback(data);
+            }).catch(error => {
+                console.log(error);
+                callback(error);
+            });
+        });
+
+    }
+
+    return {
+        PROVIDERS: PROVIDERS,
+        loadProviderConfiguration: loadProviderConfiguration,
+        fetchReceipts: fetchReceipts
+    }
+}
+
 $.ajaxSetup({
     timeout: 15000,
 });
