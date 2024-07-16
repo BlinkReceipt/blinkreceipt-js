@@ -8,6 +8,7 @@
   "license": "",
   "scripts": {
     "build": "webpack",
+    "build-if-error": "NODE_OPTIONS=--openssl-legacy-provider webpack",
     "doc": "jsdoc src/blinkreceipt.js -c jsdoc-conf.json -d docs"
   },
   "dependencies": {},
